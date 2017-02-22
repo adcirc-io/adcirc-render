@@ -7,14 +7,16 @@ function gl_shader ( gl, type, code, warn_cb, error_cb ) {
 
     if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false ) {
 
-        gl.deleteShader( shader );
+        var info = gl.getShaderInfoLog( shader );
         if ( !error_cb ) error_cb = console.error;
         error_cb( 'Unable to compile shader' );
+        error_cb( info );
+        gl.deleteShader( shader );
         return;
 
     }
 
-    if ( gl.getShaderInfoLog( shader ) !== '' ) {
+    if ( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
 
         if ( !warn_cb ) warn_cb = console.warn;
         warn_cb( gl.getShaderInfoLog( shader ), add_line_numbers( code ) );
