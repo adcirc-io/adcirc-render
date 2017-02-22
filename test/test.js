@@ -7,7 +7,8 @@ var renderer = adcirc.gl_renderer()
     ( canvas );
 
 var zoom = d3.zoom()
-    // .extent([[0,0],[canvas.width,canvas.height]])
+    // .extent([[-1,-1],[1,1]])
+    // .extent([[0,0],[900*2,600*2]])
     .on( 'zoom', zoomed );
 
 d3.select( canvas).call( zoom );

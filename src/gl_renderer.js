@@ -123,11 +123,19 @@ function gl_renderer () {
             1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1, 0,
-            tx/(100*k), -ty/(100*k), 0, 1
+            2*tx/(_width), -2*ty/(_height), 0, 1
         ]);
 
-        _gl.uniformMatrix4fv( _shader.scale_uniform, false, scale_matrix );
-        _gl.uniformMatrix4fv( _shader.translate_uniform, false, translate_matrix );
+        var matrix = new Float32Array([
+            k, 0, 0, 0,
+            0, k, 0, 0,
+            0, 0, 1, 0,
+            2*tx/_width, -2*ty/_height, 0, 1
+        ]);
+
+        _gl.uniformMatrix4fv( _shader.matrix_uniform, false, matrix );
+        // _gl.uniformMatrix4fv( _shader.scale_uniform, false, scale_matrix );
+        // _gl.uniformMatrix4fv( _shader.translate_uniform, false, translate_matrix );
 
     };
 
