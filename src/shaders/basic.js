@@ -42,8 +42,6 @@ function basic_shader ( gl ) {
     gl.enableVertexAttribArray( program.vertex_attrib );
     gl.enableVertexAttribArray( program.color_attrib );
 
-    console.log( program );
-
     return program;
 
 }

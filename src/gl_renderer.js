@@ -112,30 +112,14 @@ function gl_renderer () {
 
     _renderer.matrix = function ( k, tx, ty ) {
 
-        var scale_matrix = new Float32Array([
-            k, 0, 0, 0,
-            0, k, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1
-        ]);
-
-        var translate_matrix = new Float32Array([
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            2*tx/(_width), -2*ty/(_height), 0, 1
-        ]);
-
         var matrix = new Float32Array([
             k, 0, 0, 0,
             0, k, 0, 0,
             0, 0, 1, 0,
-            2*tx/_width, -2*ty/_height, 0, 1
+            2*tx/_width - 1.0, -2*ty/_height + 1.0, 0, 1
         ]);
 
         _gl.uniformMatrix4fv( _shader.matrix_uniform, false, matrix );
-        // _gl.uniformMatrix4fv( _shader.scale_uniform, false, scale_matrix );
-        // _gl.uniformMatrix4fv( _shader.translate_uniform, false, translate_matrix );
 
     };
 
@@ -174,16 +158,6 @@ function gl_renderer () {
         _renderer.update();
         return _renderer;
     };
-
-    // _renderer.viewport = function (_) {
-    //     if ( !arguments.length ) return _viewport;
-    //     _viewport = _;
-    //     if ( _gl ) {
-    //         _gl.viewport( _viewport.x, _viewport.y, _viewport.width, _viewport.height );
-    //         _renderer.update();
-    //     }
-    //     return _renderer;
-    // };
 
     return _renderer;
     
