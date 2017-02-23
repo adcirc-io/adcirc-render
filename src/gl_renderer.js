@@ -24,8 +24,6 @@ function gl_renderer () {
 
     var _shader;
 
-    var _items;
-
     function _renderer ( canvas ) {
 
         // Keep local reference to the canvas
