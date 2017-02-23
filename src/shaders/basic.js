@@ -6,12 +6,11 @@ function basic_vertex () {
         'attribute vec4 vertex_position;',
         'attribute vec4 vertex_color;',
         'varying lowp vec4 vert_color;',
-        'uniform mat4 matrix;',
-        // 'uniform mat4 translate_matrix;',
-        // 'uniform mat4 scale_matrix;',
+        'uniform mat4 projection_matrix;',
+        'uniform mat4 transformation_matrix;',
         'void main( void ) {',
-        // '   gl_Position = translate_matrix * scale_matrix * vertex_position;',
-        '   gl_Position = matrix * vertex_position;',
+        '   mat4 flip = mat4(mat2(1., 0., 0., -1.));',
+        '   gl_Position = projection_matrix * transformation_matrix * vertex_position;',
         '   vert_color = vertex_color;',
         '}'
     ].join('\n');
@@ -36,9 +35,8 @@ function basic_shader ( gl ) {
     gl.useProgram( program );
     program.vertex_attrib = gl.getAttribLocation( program, 'vertex_position' );
     program.color_attrib = gl.getAttribLocation( program, 'vertex_color' );
-    program.matrix_uniform = gl.getUniformLocation( program, 'matrix' );
-    program.translate_uniform = gl.getUniformLocation( program, 'translate_matrix' );
-    program.scale_uniform = gl.getUniformLocation( program, 'scale_matrix' );
+    program.projection_matrix = gl.getUniformLocation( program, 'projection_matrix' );
+    program.transformation_matrix = gl.getUniformLocation( program, 'transformation_matrix');
     gl.enableVertexAttribArray( program.vertex_attrib );
     gl.enableVertexAttribArray( program.color_attrib );
 
