@@ -1,28 +1,34 @@
 import { gl_extensions } from './gl_extensions'
 import { basic_shader } from './shaders/basic'
-import { mat4 } from './mat4'
+import { mat4, m4 } from './mat4'
 import { mesh } from './mesh'
+import { geometry } from './geometry'
+import { view } from './view'
 
 function gl_renderer () {
 
     var _gl,
         _extensions;
 
+    var _needs_render = true;
+
     var _canvas,
         _width = 300,
         _height = 150,
         _pixel_ratio = 1,
-        _k, _tx, _ty;
+        _k = 1,
+        _tx = 0,
+        _ty = 0;
 
-    var projection_matrix = mat4();
-    var transformation_matrix = mat4();
+    var projection_matrix = m4();
+    var transformation_matrix = m4();
 
     var _clear_color = d3.color( 'black' );
 
     var _on_context_lost,
         _on_error;
 
-    var _shader;
+    var _views = [];
 
     function _renderer ( canvas ) {
 
@@ -44,7 +50,6 @@ function gl_renderer () {
         }
 
         // Connect any existing event listeners
-        window.addEventListener( 'resize', on_resize );
         if ( _on_context_lost ) _canvas.addEventListener( 'webglcontextlost', _on_context_lost, false );
 
         // Load extensions
@@ -54,7 +59,7 @@ function gl_renderer () {
 
         // Set up the renderer
         _renderer.clear_color( _renderer.clear_color() );
-        _renderer.size( canvas.clientWidth, canvas.clientHeight );
+        check_render();
 
         return _renderer;
 
@@ -72,7 +77,7 @@ function gl_renderer () {
                 _clear_color.b / 255,
                 _clear_color.opacity
             );
-            _renderer.update();
+            _renderer.render();
         }
         return _renderer;
     };
@@ -95,47 +100,27 @@ function gl_renderer () {
         return _renderer;
     };
 
-    _renderer.test_mesh = function () {
+    _renderer.add_mesh = function ( m ) {
 
-        var vertex_buffer = _gl.createBuffer();
-        var color_buffer = _gl.createBuffer();
-        _shader = basic_shader( _gl );
+        var geo = geometry( _gl )( m );
+        var shader = basic_shader( _gl );
+        var vew = view( _gl );
 
-        var vertices = [
-            400,  250, 0.0, 1.0,
-            500,  250, 0.0, 1.0,
-            400,  350, 0.0, 1.0,
-            500,  350, 0.0, 1.0
-        ];
+        // Bind the shader to the geometry using the view
+        _views.push( vew( geo, shader ) );
 
-        var colors = [
-            1.0,  1.0,  1.0,  1.0,    // white
-            1.0,  0.0,  0.0,  1.0,    // red
-            0.0,  1.0,  0.0,  1.0,    // green
-            0.0,  0.0,  1.0,  1.0     // blue
-        ];
-
-        _gl.bindBuffer( _gl.ARRAY_BUFFER, color_buffer );
-        _gl.bufferData( _gl.ARRAY_BUFFER, new Float32Array( colors ), _gl.STATIC_DRAW );
-        _gl.vertexAttribPointer( _shader.color_attrib, 4, _gl.FLOAT, false, 0, 0 );
-        _gl.bindBuffer( _gl.ARRAY_BUFFER, vertex_buffer );
-        _gl.bufferData( _gl.ARRAY_BUFFER, new Float32Array( vertices ), _gl.STATIC_DRAW );
-        _gl.vertexAttribPointer( _shader.vertex_attrib, 4, _gl.FLOAT, false, 0, 0 );
-
+        // Update matrices
         update_projection();
-        update_transform( 1, 0, 0 );
 
-        _renderer.render();
+        // Render
+        return _renderer.render();
 
     };
 
     _renderer.render = function () {
 
-        _renderer.update();
-
-        if ( _shader ) {
-            _gl.drawArrays( _gl.TRIANGLE_STRIP, 0, 4 );
-        }
+        _needs_render = true;
+        return _renderer;
 
     };
 
@@ -147,54 +132,59 @@ function gl_renderer () {
 
     };
 
-    _renderer.update = function () {
-        if ( _gl ) {
-            _gl.clear( _gl.COLOR_BUFFER_BIT | _gl.DEPTH_BUFFER_BIT );
-        }
-    };
-
-    _renderer.size = function (_) {
-
-        if ( !arguments.length ) return { width: _width, height: _height };
-        if ( arguments.length == 1 ) {
-            _width = _.width;
-            _height = _.height;
-        }
-        if ( arguments.length == 2 ) {
-            _width = arguments[ 0 ];
-            _height = arguments[ 1 ];
-        }
-        if ( _canvas ) {
-            _canvas.width = _width * _pixel_ratio;
-            _canvas.height = _height * _pixel_ratio;
-        }
-        if ( _gl ) {
-            _gl.viewport( 0, 0, _width, _height );
-        }
-        if ( _shader ) {
-            update_projection();
-        }
-        _renderer.render();
-        return _renderer;
-
-    };
-
     return _renderer;
 
-    function on_resize () {
+
+
+    function check_render () {
+
+        if ( resize() || _needs_render ) {
+
+            _needs_render = false;
+            render();
+
+        }
+
+        requestAnimationFrame( check_render );
+
+    }
+
+    function render () {
+
+        _gl.clear( _gl.COLOR_BUFFER_BIT | _gl.DEPTH_BUFFER_BIT );
+
+        for ( var i=0; i<_views.length; ++i ) {
+            _views[i].render();
+        }
+
+    }
+
+    function resize () {
 
         if ( _canvas.clientWidth != _width || _canvas.clientHeight != _height ) {
 
-            _renderer.size( canvas.clientWidth, canvas.clientHeight );
+            _width = _canvas.clientWidth;
+            _height = _canvas.clientHeight;
+            _canvas.width = _width * _pixel_ratio;
+            _canvas.height = _height * _pixel_ratio;
+            _gl.viewport( 0, 0, _width, _height );
+            update_projection();
+            update_transform( _k, _tx, _ty );
+            return true;
 
         }
+
+        return false;
 
     }
 
     function update_projection () {
 
-        projection_matrix.orthographic_projection( _width, _height );
-        _gl.uniformMatrix4fv( _shader.projection_matrix, false, projection_matrix );
+        projection_matrix.ortho( 0, _width, _height, 0, -1, 1 );
+
+        for ( var i=0; i<_views.length; ++i ) {
+            _views[i].shader().set_projection( projection_matrix );
+        }
 
         update_transform( _k, _tx, _ty );
 
@@ -202,15 +192,17 @@ function gl_renderer () {
 
     function update_transform ( k, tx, ty ) {
 
-        transformation_matrix
-            .scale( k )
-            .translate( tx-_width/2, ty-_height/2 );
+        transformation_matrix.unit()
+            .translate( tx, ty, 0 )
+            .scale( k, k, 1 );
 
         _k = k;
         _tx = tx;
         _ty = ty;
 
-        _gl.uniformMatrix4fv( _shader.transformation_matrix, false, transformation_matrix );
+        for ( var i=0; i<_views.length; ++i ) {
+            _views[i].shader().set_transformation( transformation_matrix );
+        }
 
     }
     
