@@ -192,9 +192,10 @@ function gl_renderer () {
 
     function update_transform ( k, tx, ty ) {
 
-        transformation_matrix.unit()
+        transformation_matrix.identity()
             .translate( tx, ty, 0 )
-            .scale( k, k, 1 );
+            .scale( k, -k, 1 )
+            .translate( 0, -_height, 0);
 
         _k = k;
         _tx = tx;

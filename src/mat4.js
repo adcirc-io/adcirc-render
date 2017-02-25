@@ -4,6 +4,15 @@ function m4 () {
     var tmp = new Float32Array( 16 );
     mat[0] = mat[5] = mat[10] = mat[15] = 1;
 
+    mat.identity = function () {
+
+        mat.fill( 0 );
+        mat[0] = mat[5] = mat[10] = mat[15] = 1;
+
+        return mat;
+
+    };
+
     mat.ortho = function ( left, right, bottom, top, near, far ) {
 
         mat[0]  = 2 / ( right - left );
@@ -65,15 +74,6 @@ function m4 () {
         tmp[15] = mat[3]*tx + mat[7]*ty + mat[11]*tz + mat[15];
 
         return fill_mat();
-
-    };
-
-    mat.unit = function () {
-
-        mat.fill( 0 );
-        mat[0] = mat[5] = mat[10] = mat[15] = 1;
-
-        return mat;
 
     };
 
