@@ -12,10 +12,15 @@ d3.select( '#canvas' ).call( zoom );
 
 
 
+// var n1 = new Float32Array([
+//     400, 250, 0,
+//     500, 250, 0,
+//     400, 350, 0
+// ]);
 var n1 = new Float32Array([
-    400, 250, 0,
-    500, 250, 0,
-    400, 350, 0
+    25, 50, 0,
+    50, 25, 0,
+    50, 50, 0
 ]);
 
 var e1 = new Uint32Array([

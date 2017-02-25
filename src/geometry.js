@@ -8,12 +8,14 @@ function geometry ( gl ) {
     var _vertex_buffer;
     var _nodal_values_buffer;
 
+    var _bounding_box;
     var _num_elements;
     var _num_nodes;
 
     // Allows you to build a geometry from an adcirc mesh
     function _geometry ( mesh ) {
 
+        _bounding_box = mesh.bounding_box();
         _num_nodes = mesh.num_nodes();
         _num_elements = mesh.num_elements();
 
@@ -41,6 +43,10 @@ function geometry ( gl ) {
         _gl.bindBuffer( _gl.ELEMENT_ARRAY_BUFFER, _element_buffer );
         return _geometry;
 
+    };
+
+    _geometry.bounding_box = function () {
+        return _bounding_box;
     };
 
     _geometry.bind_locations = function () {

@@ -14,6 +14,11 @@ function view ( gl ) {
 
     }
 
+    _view.bounding_box = function () {
+        if ( _geometry ) return _geometry.bounding_box();
+        return [[null,null], [null,null], [null,null]];
+    };
+
     _view.render = function () {
 
         if ( _geometry && _shader ) {

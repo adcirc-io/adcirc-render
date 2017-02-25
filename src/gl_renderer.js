@@ -18,10 +18,13 @@ function gl_renderer () {
         _pixel_ratio = 1,
         _k = 1,
         _tx = 0,
-        _ty = 0;
+        _ty = 0,
+        _bbox = [[-1, 1], [-1, 1], [-1, 1]],
+        _scale_center = 1,
+        _x_center = 0,
+        _y_center = 0;
 
-    var projection_matrix = m4();
-    var transformation_matrix = m4();
+    var _projection_matrix = m4();
 
     var _clear_color = d3.color( 'black' );
 
@@ -65,6 +68,27 @@ function gl_renderer () {
 
     }
 
+    _renderer.add_mesh = function ( m ) {
+
+        var geo = geometry( _gl )( m );
+        var shader = basic_shader( _gl );
+        var vew = view( _gl );
+
+        // Bind the shader to the geometry using the view
+        _views.push( vew( geo, shader ) );
+
+        if ( _views.length == 1 ) {
+            _renderer.set_bbox_from_view( _views[0] );
+        }
+
+        // Update matrices
+        update_projection();
+
+        // Render
+        return _renderer.render();
+
+    };
+
     _renderer.clear_color = function (_) {
         if ( !arguments.length ) return _clear_color;
         if ( arguments.length == 1 ) _clear_color = _;
@@ -100,23 +124,6 @@ function gl_renderer () {
         return _renderer;
     };
 
-    _renderer.add_mesh = function ( m ) {
-
-        var geo = geometry( _gl )( m );
-        var shader = basic_shader( _gl );
-        var vew = view( _gl );
-
-        // Bind the shader to the geometry using the view
-        _views.push( vew( geo, shader ) );
-
-        // Update matrices
-        update_projection();
-
-        // Render
-        return _renderer.render();
-
-    };
-
     _renderer.render = function () {
 
         _needs_render = true;
@@ -124,10 +131,21 @@ function gl_renderer () {
 
     };
 
+    _renderer.set_bbox_from_view = function ( view ) {
+
+        _bbox = view.bounding_box();
+
+        calculate_center();
+        update_projection();
+
+        return _renderer;
+
+    };
+
     _renderer.transform = function(_) {
 
         if ( !arguments.length ) return { scale: _k, translate_x: _tx, translate_y: _ty };
-        update_transform( arguments[0], arguments[1], arguments[2] );
+        update_projection( arguments[0], arguments[1], arguments[2] );
         return _renderer;
 
     };
@@ -135,6 +153,18 @@ function gl_renderer () {
     return _renderer;
 
 
+    function calculate_center () {
+
+        var w = _bbox[0][1] - _bbox[0][0];
+        var h = _bbox[1][1] - _bbox[1][0];
+        var x_scale = _width / w;
+        var y_scale = _height / h;
+
+        _scale_center = 0.9 * Math.min( x_scale, y_scale );
+        _x_center = _bbox[0][0] + w/2;
+        _y_center = _bbox[1][0] + h/2;
+
+    }
 
     function check_render () {
 
@@ -169,7 +199,7 @@ function gl_renderer () {
             _canvas.height = _height * _pixel_ratio;
             _gl.viewport( 0, 0, _width, _height );
             update_projection();
-            update_transform( _k, _tx, _ty );
+            update_projection( _k, _tx, _ty );
             return true;
 
         }
@@ -178,31 +208,24 @@ function gl_renderer () {
 
     }
 
-    function update_projection () {
+    function update_projection ( k, tx, ty ) {
 
-        projection_matrix.ortho( 0, _width, _height, 0, -1, 1 );
+        if ( !arguments.length ) return update_projection( _k, _tx, _ty );
 
-        for ( var i=0; i<_views.length; ++i ) {
-            _views[i].shader().set_projection( projection_matrix );
-        }
-
-        update_transform( _k, _tx, _ty );
-
-    }
-
-    function update_transform ( k, tx, ty ) {
-
-        transformation_matrix.identity()
+        _projection_matrix
+            .ortho( 0, _width,  _height, 0, -1, 1 )
             .translate( tx, ty, 0 )
-            .scale( k, -k, 1 )
-            .translate( 0, -_height, 0);
+            .scale( k, k, 1 )
+            .translate( _width/2, _height/2, 0 )
+            .scale( _scale_center, -_scale_center, 1 )
+            .translate( -_x_center, -_y_center, 0 );
 
         _k = k;
         _tx = tx;
         _ty = ty;
 
         for ( var i=0; i<_views.length; ++i ) {
-            _views[i].shader().set_transformation( transformation_matrix );
+            _views[i].shader().set_projection( _projection_matrix );
         }
 
     }
