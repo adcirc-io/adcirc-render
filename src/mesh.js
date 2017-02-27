@@ -59,7 +59,7 @@ function calculate_bbox ( mesh ) {
         if ( nodes[3*i+2] < minz ) minz = nodes[3*i+2];
         else if ( nodes[3*i+2] > maxz ) maxz = nodes[3*i+2];
     }
-    return [[minx, maxx], [miny, maxy], [minz, maxz]];
+    return [[minx, miny, minz], [maxx, maxy, maxz]];
 
 }
 

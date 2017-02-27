@@ -1,7 +1,7 @@
 import { gl_extensions } from './gl_extensions'
 import { basic_shader } from './shaders/basic'
-import { mat4, m4 } from './mat4'
-import { mesh } from './mesh'
+import { gradient_shader } from './shaders/gradient'
+import { m4 } from './mat4'
 import { geometry } from './geometry'
 import { view } from './view'
 
@@ -15,14 +15,10 @@ function gl_renderer () {
     var _canvas,
         _width = 300,
         _height = 150,
-        _pixel_ratio = 1,
-        _k = 1,
-        _tx = 0,
-        _ty = 0,
-        _bbox = [[-1, 1], [-1, 1], [-1, 1]],
-        _scale_center = 1,
-        _x_center = 0,
-        _y_center = 0;
+        _pixel_ratio = 1;
+
+    var _selection,
+        _zoom = d3.zoom().on( 'zoom', zoomed );
 
     var _projection_matrix = m4();
 
@@ -37,6 +33,7 @@ function gl_renderer () {
 
         // Keep local reference to the canvas
         _canvas = canvas;
+        _selection = d3.select( _canvas );
 
         // Verify webgl availability
         if ( !web_gl_available( canvas ) ) {
@@ -59,10 +56,17 @@ function gl_renderer () {
         _extensions = gl_extensions( _gl );
         _extensions.get( 'ANGLE_instanced_arrays' );
         _extensions.get( 'OES_element_index_uint' );
+        _extensions.get( 'OES_standard_derivatives' );
 
         // Set up the renderer
         _renderer.clear_color( _renderer.clear_color() );
         check_render();
+
+        // Set up interactivity
+        _selection.call( _zoom );
+
+        // Test a shader
+        var test = gradient_shader( _gl, 2 );
 
         return _renderer;
 
@@ -74,17 +78,10 @@ function gl_renderer () {
         var shader = basic_shader( _gl );
         var vew = view( _gl );
 
-        // Bind the shader to the geometry using the view
         _views.push( vew( geo, shader ) );
 
-        if ( _views.length == 1 ) {
-            _renderer.set_bbox_from_view( _views[0] );
-        }
-
-        // Update matrices
         update_projection();
 
-        // Render
         return _renderer.render();
 
     };
@@ -131,40 +128,36 @@ function gl_renderer () {
 
     };
 
-    _renderer.set_bbox_from_view = function ( view ) {
+    _renderer.zoom_to = function (_) {
 
-        _bbox = view.bounding_box();
+        if ( !arguments.length ) return _renderer;
 
-        calculate_center();
-        update_projection();
+        var bounds = _.bounding_box();
+        var duration = 0;
+        var dx = bounds[1][0] - bounds[0][0],
+            dy = bounds[1][1] - bounds[0][1],
+            x = (bounds[0][0] + bounds[1][0]) / 2,
+            y = _height - (bounds[0][1] + bounds[1][1]) / 2,
+            scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / _width, dy / _height))),
+            translate = [ _width / 2 - scale * x, _height / 2 - scale * y];
 
-        return _renderer;
+        if ( arguments.length == 2 )
+            duration = arguments[1];
+
+        _selection
+            .transition()
+            .duration( duration )
+            .call(
+                _zoom.transform,
+                d3.zoomIdentity
+                    .translate( translate[0], translate[1] )
+                    .scale( scale )
+            );
 
     };
 
-    _renderer.transform = function(_) {
-
-        if ( !arguments.length ) return { scale: _k, translate_x: _tx, translate_y: _ty };
-        update_projection( arguments[0], arguments[1], arguments[2] );
-        return _renderer;
-
-    };
 
     return _renderer;
-
-
-    function calculate_center () {
-
-        var w = _bbox[0][1] - _bbox[0][0];
-        var h = _bbox[1][1] - _bbox[1][0];
-        var x_scale = _width / w;
-        var y_scale = _height / h;
-
-        _scale_center = 0.9 * Math.min( x_scale, y_scale );
-        _x_center = _bbox[0][0] + w/2;
-        _y_center = _bbox[1][0] + h/2;
-
-    }
 
     function check_render () {
 
@@ -199,7 +192,6 @@ function gl_renderer () {
             _canvas.height = _height * _pixel_ratio;
             _gl.viewport( 0, 0, _width, _height );
             update_projection();
-            update_projection( _k, _tx, _ty );
             return true;
 
         }
@@ -210,24 +202,27 @@ function gl_renderer () {
 
     function update_projection ( k, tx, ty ) {
 
-        if ( !arguments.length ) return update_projection( _k, _tx, _ty );
+        if ( !arguments.length ) {
+            var t = d3.zoomTransform( _canvas );
+            return update_projection( t.k, t.x, t.y );
+        }
 
         _projection_matrix
             .ortho( 0, _width,  _height, 0, -1, 1 )
             .translate( tx, ty, 0 )
-            .scale( k, k, 1 )
-            .translate( _width/2, _height/2, 0 )
-            .scale( _scale_center, -_scale_center, 1 )
-            .translate( -_x_center, -_y_center, 0 );
-
-        _k = k;
-        _tx = tx;
-        _ty = ty;
+            .scale( k, -k, 1 )
+            .translate( 0, -_height, 0 );
 
         for ( var i=0; i<_views.length; ++i ) {
             _views[i].shader().set_projection( _projection_matrix );
         }
 
+    }
+
+    function zoomed () {
+        var t = d3.event.transform;
+        update_projection( t.k, t.x, t.y );
+        _renderer.render();
     }
     
 }

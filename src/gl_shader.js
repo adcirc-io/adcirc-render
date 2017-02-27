@@ -16,7 +16,7 @@ function gl_shader ( gl, type, code, warn_cb, error_cb ) {
 
     }
 
-    if ( !gl.getShaderParameter(shader, gl.COMPILE_STATUS) ) {
+    if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false ) {
 
         if ( !warn_cb ) warn_cb = console.warn;
         warn_cb( gl.getShaderInfoLog( shader ), add_line_numbers( code ) );
