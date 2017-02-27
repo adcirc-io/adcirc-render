@@ -10,6 +10,10 @@ function view ( gl ) {
         _geometry = geometry;
         _shader = shader;
 
+        _shader.attributes( function ( attribute, key ) {
+            _geometry.request_vertex_attribute( key );
+        });
+
         return _view;
 
     }
@@ -25,13 +29,13 @@ function view ( gl ) {
 
             _shader.use();
 
-            _geometry.bind_locations();
-            _gl.vertexAttribPointer( _shader.attrib_position(), 3, _gl.FLOAT, false, 0, 0 );
-            _gl.enableVertexAttribArray( _shader.attrib_position() );
+            _shader.attributes( function ( attribute, key ) {
 
-            _geometry.bind_nodal_values();
-            _gl.vertexAttribPointer( _shader.attrib_color(), 4, _gl.FLOAT, false, 0, 0 );
-            _gl.enableVertexAttribArray( _shader.attrib_color() );
+                var buffer = _geometry.bind_buffer( key );
+                _gl.vertexAttribPointer( attribute, buffer.size, buffer.type, buffer.normalized, buffer.stride, buffer.offset );
+                _gl.enableVertexAttribArray( attribute );
+
+            });
 
             _geometry.bind_element_array();
             _gl.drawElements(

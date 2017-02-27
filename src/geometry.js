@@ -4,23 +4,21 @@ function geometry ( gl ) {
 
     var _gl = gl;
 
+    var _buffers = d3.map();
     var _element_buffer;
-    var _vertex_buffer;
-    var _nodal_values_buffer;
 
     var _bounding_box;
     var _num_elements;
     var _num_nodes;
 
-    // Allows you to build a geometry from an adcirc mesh
     function _geometry ( mesh ) {
 
         _bounding_box = mesh.bounding_box();
         _num_nodes = mesh.num_nodes();
         _num_elements = mesh.num_elements();
 
-        if ( !_vertex_buffer ) _vertex_buffer = _gl.createBuffer();
-        if ( !_element_buffer ) _element_buffer = _gl.createBuffer();
+        var _vertex_buffer = _gl.createBuffer();
+        _element_buffer = _gl.createBuffer();
 
         _gl.bindBuffer( _gl.ARRAY_BUFFER, _vertex_buffer );
         _gl.bufferData( _gl.ARRAY_BUFFER, mesh.nodes(), _gl.STATIC_DRAW );
@@ -28,15 +26,24 @@ function geometry ( gl ) {
         _gl.bindBuffer( _gl.ELEMENT_ARRAY_BUFFER, _element_buffer );
         _gl.bufferData( _gl.ELEMENT_ARRAY_BUFFER, mesh.elements(), _gl.STATIC_DRAW );
 
-        if ( mesh.nodal_values() ) {
-            _nodal_values_buffer = _gl.createBuffer();
-            _gl.bindBuffer( _gl.ARRAY_BUFFER, _nodal_values_buffer );
-            _gl.bufferData( _gl.ARRAY_BUFFER, mesh.nodal_values(), _gl.STATIC_DRAW );
-        }
+        _buffers.set( 'vertex_position', {
+            buffer: _vertex_buffer,
+            size: 3,
+            type: _gl.FLOAT,
+            normalized: false,
+            stride: 0,
+            offset: 0
+        });
 
         return _geometry;
 
     }
+
+    _geometry.bind_buffer = function ( attribute ) {
+        var buffer = _buffers.get( attribute );
+        _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
+        return buffer;
+    };
 
     _geometry.bind_element_array = function () {
 
@@ -49,16 +56,6 @@ function geometry ( gl ) {
         return _bounding_box;
     };
 
-    _geometry.bind_locations = function () {
-        _gl.bindBuffer( _gl.ARRAY_BUFFER, _vertex_buffer );
-        return _geometry;
-    };
-
-    _geometry.bind_nodal_values = function () {
-        _gl.bindBuffer( _gl.ARRAY_BUFFER, _nodal_values_buffer );
-        return _geometry;
-    };
-
     _geometry.num_elements = function () {
         return _num_elements;
     };
@@ -67,8 +64,49 @@ function geometry ( gl ) {
         return _num_nodes;
     };
 
+    _geometry.request_vertex_attribute = function ( attribute ) {
+
+        switch( attribute ) {
+
+            case 'vertex_normal':
+                var normals = build_vertex_normals();
+                var buffer = _gl.createBuffer();
+                _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer );
+                _gl.bufferData( _gl.ARRAY_BUFFER, normals, _gl.STATIC_DRAW );
+                _buffers.set( 'vertex_normal', {
+                    buffer: buffer,
+                    size: 3,
+                    type: _gl.FLOAT,
+                    normalized: false,
+                    stride: 0,
+                    offset: 0
+                });
+                break;
+
+            case 'vertex_position':
+                break;
+
+            default:
+                console.warn( attribute + ' attribute not supported' );
+
+        }
+
+    };
+
 
     return _geometry;
+
+
+    function build_vertex_normals () {
+        var _vertex_normals = new Float32Array( 9 * _num_elements );
+        _vertex_normals.fill( 0 );
+        for ( var i=0; i<_num_elements; ++i ) {
+            _vertex_normals[ 9 * i ] = 1;
+            _vertex_normals[ 9 * i + 4 ] = 1;
+            _vertex_normals[ 9 * i + 8 ] = 1;
+        }
+        return _vertex_normals;
+    }
 
 }
 

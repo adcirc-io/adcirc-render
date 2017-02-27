@@ -4,52 +4,98 @@ function gradient_shader ( gl, num_colors ) {
 
     var _gl = gl;
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
+    var _gradient_colors = [];
+    var _gradient_stops = [];
+    var _wire_color = d3.color( 'black' );
+    var _wire_alpha = 0.75;
+    var _wire_width = 2.0;
+
+    for ( var i=0; i<num_colors; ++i ) {
+        _gradient_stops.push( i/(num_colors-1) );
+        _gradient_colors.push( d3.color( d3.schemeCategory20[i%num_colors] ) );
+    }
 
     _gl.useProgram( _program );
 
-    var attrib_normal = _gl.getAttribLocation( _program, 'vertex_normal' );
-    var attrib_position = _gl.getAttribLocation( _program, 'vertex_position' );
-    var uniform_colors = _gl.getUniformLocation( _program, 'colors' );
-    var uniform_color_stops = _gl.getUniformLocation( _program, 'stops' );
-    var uniform_projection = _gl.getUniformLocation( _program, 'projection_matrix' );
-    var uniform_wire_alpha = _gl.getUniformLocation( _program, 'wire_alpha' );
-    var uniform_wire_color = _gl.getUniformLocation( _program, 'wire_color' );
-    var uniform_wire_width = _gl.getUniformLocation( _program, 'wire_width' );
+    var _attributes = d3.map({
+        'vertex_normal': _gl.getAttribLocation( _program, 'vertex_normal' ),
+        'vertex_position': _gl.getAttribLocation( _program, 'vertex_position' )
+    });
 
-    _program.attrib_normal = function () {
-        return attrib_normal;
+    var _uniforms = d3.map({
+        'gradient_colors': _gl.getUniformLocation( _program, 'gradient_colors' ),
+        'gradient_stops': _gl.getUniformLocation( _program, 'gradient_stops' ),
+        'projection_matrix': _gl.getUniformLocation( _program, 'projection_matrix' ),
+        'wire_alpha': _gl.getUniformLocation( _program, 'wire_alpha' ),
+        'wire_color': _gl.getUniformLocation( _program, 'wire_color' ),
+        'wire_width': _gl.getUniformLocation( _program, 'wire_width' )
+    });
+
+    _program.attribute = function ( attribute ) {
+        return _attributes.get( attribute );
     };
 
-    _program.attrib_position = function () {
-        return attrib_position;
+    _program.attributes = function ( _ ) {
+        if ( !arguments.length ) return _attributes.keys();
+        _attributes.each( _ );
+        return _program;
+    };
+
+    _program.gradient_colors = function ( _ ) {
+        if ( !arguments.length ) return _gradient_colors;
+        _gradient_colors = _;
+        var flattened = _gradient_colors
+            .map( function ( color ) { return [ color.r/255, color.g/255, color.b/255 ] } )
+            .reduce( function ( a, b ) { return a.concat( b ); }, [] );
+        _gl.useProgram( _program );
+        _gl.uniform3fv( _program.uniform( 'gradient_colors' ), flattened );
+        return _program;
+    };
+
+    _program.gradient_stops = function ( _ ) {
+        if ( !arguments.length ) return _gradient_stops;
+        _gradient_stops = _;
+        _gl.useProgram( _program );
+        _gl.uniform1fv( _program.uniform( 'gradient_stops' ), _gradient_stops );
+        return _program;
     };
 
     _program.set_projection = function ( matrix ) {
         _gl.useProgram( _program );
-        _gl.uniformMatrix4fv( uniform_projection, false, matrix );
+        _gl.uniformMatrix4fv( _program.uniform( 'projection_matrix' ), false, matrix );
         return _program;
     };
 
-    _program.set_wire_alpha = function ( a ) {
+    _program.wire_alpha = function ( _ ) {
+        if ( !arguments.length ) return _wire_alpha;
+        _wire_alpha = _;
         _gl.useProgram( _program );
-        _gl.uniform1f( uniform_wire_alpha, a );
+        _gl.uniform1f( _program.uniform( 'wire_alpha' ), _ );
         return _program;
     };
 
-    _program.set_wire_color = function ( c ) {
+    _program.wire_color = function ( _ ) {
+        if ( !arguments.length ) return _wire_color;
+        _wire_color = _;
         _gl.useProgram( _program );
-        _gl.uniform3fv( uniform_wire_color, [c.r, c.g, c.b] );
+        _gl.uniform3fv( _program.uniform( 'wire_color' ), [_.r/255, _.g/255, _.b/255] );
         return _program;
     };
 
-    _program.set_gradient = function ( stops, colors ) {
-        return _program
-    };
-
-    _program.set_wire_width = function ( w ) {
+    _program.wire_width = function ( _ ) {
+        if ( !arguments.length ) return _wire_width;
+        _wire_width = _;
         _gl.useProgram( _program );
-        _gl.uniform1f( uniform_wire_width, w );
+        _gl.uniform1f( _program.uniform( 'wire_width' ), _ );
         return _program;
+    };
+
+    _program.uniform = function ( uniform ) {
+        return _uniforms.get( uniform );
+    };
+
+    _program.uniforms = function () {
+        return _uniforms.keys();
     };
 
     _program.use = function () {
@@ -57,7 +103,12 @@ function gradient_shader ( gl, num_colors ) {
         return _program;
     };
 
-    return _program;
+    return _program
+        .gradient_colors( _program.gradient_colors() )
+        .gradient_stops( _program.gradient_stops() )
+        .wire_alpha( _program.wire_alpha() )
+        .wire_color( _program.wire_color() )
+        .wire_width( _program.wire_width() );
 
 }
 
@@ -67,20 +118,20 @@ function gradient_vertex ( num_colors ) {
         'attribute vec3 vertex_position;',
         'attribute vec3 vertex_normal;',
         'uniform mat4 projection_matrix;',
-        'uniform float stops[' + num_colors + '];',
-        'uniform vec3 colors[' + num_colors + '];',
+        'uniform float gradient_stops[' + num_colors + '];',
+        'uniform vec3 gradient_colors[' + num_colors + '];',
         'varying vec3 _vertex_normal;',
         'varying vec3 _vertex_color;',
         'void main() {',
         '  gl_Position = projection_matrix * vec4( vertex_position, 1.0 );',
         '  _vertex_normal = vertex_normal;',
-        '  _vertex_color = colors[0];',
+        '  _vertex_color = gradient_colors[0];',
         '  float t;'
     ];
 
     for ( var i=1; i<num_colors; ++i ) {
-        code.push( '  t = clamp((vertex_position.z - stops['+(i-1)+']) / (stops['+i+']-stops['+(i-1)+']), 0.0, 1.0);' );
-        code.push( '  _vertex_color = mix( _vertex_color, colors['+i+'], t*t*(3.0-2.0*t));')
+        code.push( '  t = clamp((vertex_position.z - gradient_stops['+(i-1)+']) / (gradient_stops['+i+']-gradient_stops['+(i-1)+']), 0.0, 1.0);' );
+        code.push( '  _vertex_color = mix( _vertex_color, gradient_colors['+i+'], t*t*(3.0-2.0*t));')
     }
 
     code.push('}');
