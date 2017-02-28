@@ -72,8 +72,8 @@ function gl_renderer () {
     _renderer.add_mesh = function ( m ) {
 
         var geo = geometry( _gl )( m );
-        // var shader = basic_shader( _gl );
-        var shader = gradient_shader( _gl, 3 );
+        var shader = basic_shader( _gl );
+        // var shader = gradient_shader( _gl, 3 );
         // var shader = gradient_shader( _gl, 3 )
         //     .set_gradient( [ 0, 0.5, 1 ], [ d3.color('steelblue'), d3.color('white'), d3.color('green') ] )
         //     .set_wire_color( d3.color( 'black' ) )
@@ -141,11 +141,14 @@ function gl_renderer () {
             dy = bounds[1][1] - bounds[0][1],
             x = (bounds[0][0] + bounds[1][0]) / 2,
             y = _height - (bounds[0][1] + bounds[1][1]) / 2,
-            scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / _width, dy / _height))),
+            scale = 0.9 / Math.max( dx / _width, dy / _height ),
             translate = [ _width / 2 - scale * x, _height / 2 - scale * y];
 
         if ( arguments.length == 2 )
             duration = arguments[1];
+
+        console.log( 'Zooming to: ' + bounds );
+        console.log( dx, dy, x, y, scale, translate );
 
         _selection
             .transition()
@@ -211,7 +214,7 @@ function gl_renderer () {
         }
 
         _projection_matrix
-            .ortho( 0, _width,  _height, 0, -1, 1 )
+            .ortho( 0, _width,  _height, 0, -10000, 10000 )
             .translate( tx, ty, 0 )
             .scale( k, -k, 1 )
             .translate( 0, -_height, 0 );

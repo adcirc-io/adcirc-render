@@ -7,7 +7,7 @@ function basic_shader ( gl ) {
     var _face_color = d3.color( 'white' );
     var _wire_color = d3.color( 'black' );
     var _wire_alpha = 0.75;
-    var _wire_width = 2.0;
+    var _wire_width = 1.0;
 
     _gl.useProgram( _program );
 
