@@ -76,7 +76,7 @@ function gl_renderer () {
         // var shader = gradient_shader( _gl, 3 );
         // var shader = gradient_shader( _gl, 3 )
         //     .set_gradient( [ 0, 0.5, 1 ], [ d3.color('steelblue'), d3.color('white'), d3.color('green') ] )
-        //     .set_wire_color( d3.color( 'black' ) )
+        //     .wire_color( d3.color( 'black' ) )
         //     .set_wire_alpha( 0.25 )
         //     .set_wire_width( 2.5 );
         var vew = view( _gl );
@@ -146,9 +146,6 @@ function gl_renderer () {
 
         if ( arguments.length == 2 )
             duration = arguments[1];
-
-        console.log( 'Zooming to: ' + bounds );
-        console.log( dx, dy, x, y, scale, translate );
 
         _selection
             .transition()

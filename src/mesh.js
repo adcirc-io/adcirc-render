@@ -3,8 +3,6 @@ function mesh () {
     var _nodes;
     var _elements;
 
-    var _nodal_values;
-
     var _bounding_box;
 
     function _mesh () {}
@@ -26,18 +24,12 @@ function mesh () {
         return _mesh;
     };
 
-    _mesh.nodal_values = function (_) {
-        if ( !arguments.length ) return _nodal_values;
-        _nodal_values = _;
-        return _mesh;
-    };
-
     _mesh.num_elements = function () {
-        return _elements ? _elements.length : 0;
+        return _elements ? _elements.length / 3 : 0;
     };
 
     _mesh.num_nodes = function () {
-        return _nodes ? _nodes.length : 0;
+        return _nodes ? _nodes.length / 3 : 0;
     };
 
     return _mesh;

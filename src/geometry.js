@@ -1,8 +1,8 @@
 
-// A geometry object that can be built manually or from an adcirc mesh
-function geometry ( gl ) {
+function geometry ( gl, indexed ) {
 
     var _gl = gl;
+    var _indexed = indexed || false;
 
     var _buffers = d3.map();
     var _element_buffer;
@@ -14,17 +14,27 @@ function geometry ( gl ) {
     function _geometry ( mesh ) {
 
         _bounding_box = mesh.bounding_box();
+
+        // if ( !indexed ) {
+        //
+        //     var _vertex_buffer = _gl.createBuffer();
+        //
+        // }
+
         _num_nodes = mesh.num_nodes();
         _num_elements = mesh.num_elements();
 
         var _vertex_buffer = _gl.createBuffer();
         _element_buffer = _gl.createBuffer();
 
+        var nodes = mesh.nodes();
+        var elements = mesh.elements();
+
         _gl.bindBuffer( _gl.ARRAY_BUFFER, _vertex_buffer );
-        _gl.bufferData( _gl.ARRAY_BUFFER, mesh.nodes(), _gl.STATIC_DRAW );
+        _gl.bufferData( _gl.ARRAY_BUFFER, nodes, _gl.STATIC_DRAW );
 
         _gl.bindBuffer( _gl.ELEMENT_ARRAY_BUFFER, _element_buffer );
-        _gl.bufferData( _gl.ELEMENT_ARRAY_BUFFER, mesh.elements(), _gl.STATIC_DRAW );
+        _gl.bufferData( _gl.ELEMENT_ARRAY_BUFFER, elements, _gl.STATIC_DRAW );
 
         _buffers.set( 'vertex_position', {
             buffer: _vertex_buffer,
