@@ -15,7 +15,6 @@ function mesh () {
         if ( !arguments.length ) return _elements;
         if ( _.array && _.map ) {
             _elements = _;
-            _bounding_box = calculate_bbox( _nodes.array );
         }
         return _mesh;
     };
@@ -63,11 +62,11 @@ function mesh () {
     };
 
     _mesh.num_elements = function () {
-        return _elements ? _elements.length / 3 : 0;
+        return _elements.array.length / 3;
     };
 
     _mesh.num_nodes = function () {
-        return _nodes ? _nodes.array.length / 3 : 0;
+        return _nodes.array.length / 3;
     };
 
     return _mesh;

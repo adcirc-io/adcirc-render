@@ -1,18 +1,20 @@
 import { gl_program } from '../gl_program'
 
-function gradient_shader ( gl, num_colors ) {
+function gradient_shader ( gl, num_colors, min, max ) {
 
     var _gl = gl;
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
     var _gradient_colors = [];
     var _gradient_stops = [];
     var _wire_color = d3.color( 'black' );
-    var _wire_alpha = 0.75;
-    var _wire_width = 2.0;
+    var _wire_alpha = 0.3;
+    var _wire_width = 1.0;
 
+    var min = min || 0;
+    var max = max || 1;
     for ( var i=0; i<num_colors; ++i ) {
-        _gradient_stops.push( i/(num_colors-1) );
-        _gradient_colors.push( d3.color( d3.schemeCategory20[i%num_colors] ) );
+        _gradient_stops.push( min + ( max-min ) * i/(num_colors-1) );
+        _gradient_colors.push( d3.color( d3.schemeCategory20c[i%num_colors] ) );
     }
 
     _gl.useProgram( _program );

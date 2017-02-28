@@ -41,8 +41,15 @@ function gl_renderer () {
             return;
         }
 
+        var _attributes = {
+            alpha: false,
+            antialias: false,
+            premultipliedAlpha: false,
+            stencil: true
+        };
+
         // Acquire the webgl context
-        _gl = _canvas.getContext( 'webgl' ) || _canvas.getContext( 'experimental-webgl' );
+        _gl = _canvas.getContext( 'webgl', _attributes ) || _canvas.getContext( 'experimental-webgl', _attributes );
 
         if ( _gl === null ) {
             if ( _on_error ) _on_error ( 'Error creating WebGL context' );
@@ -72,9 +79,9 @@ function gl_renderer () {
     _renderer.add_mesh = function ( m ) {
 
         var geo = geometry( _gl )( m );
-        var shader = basic_shader( _gl );
-        // var shader = gradient_shader( _gl, 3 );
-        // var shader = gradient_shader( _gl, 3 )
+        // var shader = basic_shader( _gl );
+        // var shader = gradient_shader( _gl, 3 ).wire_alpha( 0.3 ).wire_width( 1.0 );
+        var shader = gradient_shader( _gl, 10, geo.bounding_box()[0][2], geo.bounding_box()[1][2] );
         //     .set_gradient( [ 0, 0.5, 1 ], [ d3.color('steelblue'), d3.color('white'), d3.color('green') ] )
         //     .wire_color( d3.color( 'black' ) )
         //     .set_wire_alpha( 0.25 )
