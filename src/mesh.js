@@ -1,7 +1,7 @@
 function mesh () {
 
-    var _nodes;
-    var _elements;
+    var _nodes = { array: [], map: d3.map() };
+    var _elements = { array: [], map: d3.map() };
 
     var _bounding_box;
 
@@ -13,14 +13,52 @@ function mesh () {
 
     _mesh.elements = function (_) {
         if ( !arguments.length ) return _elements;
-        _elements = _;
+        if ( _.array && _.map ) {
+            _elements = _;
+            _bounding_box = calculate_bbox( _nodes.array );
+        }
+        return _mesh;
+    };
+
+    _mesh.element_array = function ( _ ) {
+        if ( !arguments.length ) return _elements.array;
+        _elements.array = _;
+        return _mesh;
+    };
+
+    _mesh.element_index = function ( element_number ) {
+        return _elements.map.get( element_number );
+    };
+
+    _mesh.element_map = function ( _ ) {
+        if ( !arguments.length ) return _elements.map;
+        _elements.map = _;
         return _mesh;
     };
 
     _mesh.nodes = function (_) {
         if ( !arguments.length ) return _nodes;
-        _nodes = _;
-        _bounding_box = calculate_bbox( _mesh );
+        if ( _.array && _.map ) {
+            _nodes = _;
+            _bounding_box = calculate_bbox( _nodes.array );
+        }
+        return _mesh;
+    };
+
+    _mesh.node_array = function ( _ ) {
+        if ( !arguments.length ) return _nodes.array;
+        _nodes.array = _;
+        calculate_bbox( _mesh.node_array() );
+        return _mesh;
+    };
+
+    _mesh.node_index = function ( node_number ) {
+        return _nodes.map.get( node_number );
+    };
+
+    _mesh.node_map = function ( _ ) {
+        if ( !arguments.length ) return _nodes.map;
+        _nodes.map = _;
         return _mesh;
     };
 
@@ -29,27 +67,26 @@ function mesh () {
     };
 
     _mesh.num_nodes = function () {
-        return _nodes ? _nodes.length / 3 : 0;
+        return _nodes ? _nodes.array.length / 3 : 0;
     };
 
     return _mesh;
 
 }
 
-function calculate_bbox ( mesh ) {
+function calculate_bbox ( node_array ) {
 
-    var nodes = mesh.nodes();
-    var numnodes = nodes.length/3;
+    var numnodes = node_array.length/3;
     var minx = Infinity, maxx = -Infinity;
     var miny = Infinity, maxy = -Infinity;
     var minz = Infinity, maxz = -Infinity;
     for ( var i=0; i<numnodes; ++i ) {
-        if ( nodes[3*i] < minx ) minx = nodes[3*i];
-        else if ( nodes[3*i] > maxx ) maxx = nodes[3*i];
-        if ( nodes[3*i+1] < miny ) miny = nodes[3*i+1];
-        else if ( nodes[3*i+1] > maxy ) maxy = nodes[3*i+1];
-        if ( nodes[3*i+2] < minz ) minz = nodes[3*i+2];
-        else if ( nodes[3*i+2] > maxz ) maxz = nodes[3*i+2];
+        if ( node_array[3*i] < minx ) minx = node_array[3*i];
+        else if ( node_array[3*i] > maxx ) maxx = node_array[3*i];
+        if ( node_array[3*i+1] < miny ) miny = node_array[3*i+1];
+        else if ( node_array[3*i+1] > maxy ) maxy = node_array[3*i+1];
+        if ( node_array[3*i+2] < minz ) minz = node_array[3*i+2];
+        else if ( node_array[3*i+2] > maxz ) maxz = node_array[3*i+2];
     }
     return [[minx, miny, minz], [maxx, maxy, maxz]];
 

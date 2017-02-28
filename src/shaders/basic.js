@@ -115,7 +115,7 @@ function basic_fragment () {
 
     return [
         '#extension GL_OES_standard_derivatives : enable',
-        'precision mediump float;',
+        'precision highp float;',
         'varying vec3 _vertex_normal;',
         'uniform vec3 face_color;',
         'uniform vec3 wire_color;',

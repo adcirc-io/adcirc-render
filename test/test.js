@@ -11,17 +11,20 @@ var n1 = new Float32Array([
     75, 50, 0.0,
     75, 25, 0.5
 ]);
+var nm1 = d3.map( [0, 1, 2, 3, 4] );
 var e1 = new Uint32Array([
     0, 1, 2,
     1, 2, 3,
     1, 3, 4
 ]);
+var em1 = d3.map( [0, 1, 2] );
+
 var n2 = new Float32Array([ 475, 325, 0, 475, 275, 0, 425, 325, 0 ]);
 var elements = new Uint32Array([ 0, 1, 2 ]);
 
 var m1 = adcirc.mesh()
-    .nodes( n1 )
-    .elements( e1 );
+    .nodes( { array: n1, map: nm1 } )
+    .elements( { array: e1, map: em1 } );
     // .nodal_values( colors );
 
 var m2 = adcirc.mesh()
