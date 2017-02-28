@@ -32,19 +32,26 @@ function view ( gl ) {
             _shader.attributes( function ( attribute, key ) {
 
                 var buffer = _geometry.bind_buffer( key );
-                console.log( key, buffer );
                 _gl.vertexAttribPointer( attribute, buffer.size, buffer.type, buffer.normalized, buffer.stride, buffer.offset );
                 _gl.enableVertexAttribArray( attribute );
 
             });
 
-            _geometry.bind_element_array();
-            _gl.drawElements(
-                _gl.TRIANGLES,
-                _geometry.num_elements() * 3,
-                _gl.UNSIGNED_INT,
-                0
-            );
+            if ( _geometry.indexed() ) {
+
+                _geometry.bind_element_array();
+                _gl.drawElements(
+                    _gl.TRIANGLES,
+                    _geometry.num_elements() * 3,
+                    _gl.UNSIGNED_INT,
+                    0
+                );
+
+            } else {
+
+                _gl.drawArrays( _gl.TRIANGLES, 0, _geometry.num_nodes()/3 );
+
+            }
 
         }
 
