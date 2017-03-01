@@ -36,7 +36,7 @@ var mesh = adcirc
 var geometry = adcirc
     .geometry( renderer.gl_context() )
     .mesh( mesh )
-    .nodal_value( 'height' );
+    .elemental_value( 'height' );
 
 var shader = adcirc
     .gradient_shader( renderer.gl_context(),
@@ -55,13 +55,13 @@ d3.interval( random_heights, 250 );
 
 function random_heights () {
 
-    var num_vals = num_rows * ( num_cols - 1 ) * 3;
+    var num_vals = num_rows * ( num_cols - 1 );
     var heights = [];
     for ( var i=0; i<num_vals; ++i ) {
         heights.push( Math.random() );
     }
 
-    mesh.nodal_value( 'height', heights );
+    mesh.elemental_value( 'height', heights );
 
 }
 

@@ -19,7 +19,7 @@ function mesh () {
     _mesh.elemental_value = function ( value, array ) {
         if ( arguments.length == 1 ) return _elemental_values.get( value );
         if ( arguments.length == 2 ) _elemental_values.set( value, array );
-        if ( _subscribers.has( value ) ) _subscribers.get( value ).forEach( function ( cb ) { cb() } );
+        _subscribers.forEach( function ( cb ) { cb( value ); } );
     };
 
     _mesh.elements = function (_) {

@@ -37,10 +37,6 @@ function geometry ( gl, indexed ) {
     };
 
     _geometry.elemental_value = function ( _ ) {
-        if ( !arguments.length ) {
-            _elemental_value = null;
-            return _geometry;
-        }
         _elemental_value = _;
         return _geometry;
     };
@@ -139,10 +135,6 @@ function geometry ( gl, indexed ) {
     };
 
     _geometry.nodal_value = function ( _ ) {
-        if ( !arguments.length ) {
-            _nodal_value = null;
-            return _geometry;
-        }
         _nodal_value = _;
         return _geometry;
     };
@@ -200,10 +192,52 @@ function geometry ( gl, indexed ) {
 
         if ( value == _nodal_value ) {
 
-            var buffer = _buffers.get( 'vertex_value' );
+            // There will be num_nodes values that need to be applied to 3*num_triangles values
+            var data = new Float32Array( 3*_num_triangles );
             var values = _mesh.nodal_value( value );
+            var _elements = _mesh.elements();
+            var _nodes = _mesh.nodes();
+
+            for ( var i=0; i<3*_num_triangles; ++i ) {
+
+                var node_number = _elements.array[ i ];
+                var node_index = _nodes.map.get( node_number );
+
+                data[ i ] = values[ node_index ];
+
+            }
+
+            var buffer = _buffers.get( 'vertex_value' );
             _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
-            _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, new Float32Array( values ) );
+            _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, data );
+
+            _subscribers.forEach( function ( cb ) { cb( value ); } );
+
+        }
+
+        if ( value == _elemental_value ) {
+
+            // There will be num_triangles values that need to be applied to 3*num_triangles values
+            var data = new Float32Array( 3*_num_triangles );
+            var values = _mesh.elemental_value( value );
+            var _elements = _mesh.elements();
+            var _nodes = _mesh.nodes();
+
+            for ( var i=0; i<_num_triangles; ++i ) {            // Loop through elements
+
+                var node_number = _elements.array[ i ];
+                var node_index = _nodes.map.get( node_number );
+                var value = values[ node_index ];
+
+                data[ 3*i ] = value;
+                data[ 3*i + 1 ] = value;
+                data[ 3*i + 2 ] = value;
+
+            }
+
+            var buffer = _buffers.get( 'vertex_value' );
+            _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
+            _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, data );
 
             _subscribers.forEach( function ( cb ) { cb( value ); } );
 
