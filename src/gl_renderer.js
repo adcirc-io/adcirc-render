@@ -78,7 +78,7 @@ function gl_renderer () {
 
     _renderer.add_mesh = function ( m ) {
 
-        var geo = geometry( _gl )( m );
+        var geo = geometry( _gl ).mesh( m );
         // var shader = basic_shader( _gl );
         // var shader = gradient_shader( _gl, 3 ).wire_alpha( 0.3 ).wire_width( 1.0 );
         var shader = gradient_shader( _gl, 10, geo.bounding_box()[0][2], geo.bounding_box()[1][2] );
@@ -92,6 +92,15 @@ function gl_renderer () {
 
         update_projection();
 
+        return _renderer.render();
+
+    };
+
+    _renderer.add_view = function ( view ) {
+
+        view.subscribe( _renderer.render );
+        _views.push( view );
+        update_projection();
         return _renderer.render();
 
     };
@@ -113,7 +122,7 @@ function gl_renderer () {
         return _renderer;
     };
 
-    _renderer.context = function (_) {
+    _renderer.gl_context = function (_) {
         if ( !arguments.length ) return _gl;
         _gl = _;
         return _renderer;

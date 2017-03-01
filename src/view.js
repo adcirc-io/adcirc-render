@@ -5,6 +5,8 @@ function view ( gl ) {
     var _geometry;
     var _shader;
 
+    var _subscribers = [];
+
     function _view ( geometry, shader ) {
 
         _geometry = geometry;
@@ -14,6 +16,8 @@ function view ( gl ) {
             _geometry.request_vertex_attribute( key );
         });
 
+        _geometry.subscribe( on_geometry_update );
+
         return _view;
 
     }
@@ -21,6 +25,10 @@ function view ( gl ) {
     _view.bounding_box = function () {
         if ( _geometry ) return _geometry.bounding_box();
         return [[null,null,null], [null,null,null]];
+    };
+
+    _view.geometry = function () {
+        return _geometry;
     };
 
     _view.render = function () {
@@ -42,14 +50,14 @@ function view ( gl ) {
                 _geometry.bind_element_array();
                 _gl.drawElements(
                     _gl.TRIANGLES,
-                    _geometry.num_elements() * 3,
+                    _geometry.num_triangles() * 3,
                     _gl.UNSIGNED_INT,
                     0
                 );
 
             } else {
 
-                _gl.drawArrays( _gl.TRIANGLES, 0, _geometry.num_nodes()/3 );
+                _gl.drawArrays( _gl.TRIANGLES, 0, _geometry.num_triangles() * 3 );
 
             }
 
@@ -59,13 +67,24 @@ function view ( gl ) {
 
     };
 
-    _view.geometry = function () {
-        return _geometry;
-    };
-
     _view.shader = function () {
         return _shader;
     };
+
+    _view.subscribe = function ( _ ) {
+        if ( !arguments.length ) {
+            _subscribers = [];
+            return _view;
+        }
+        _subscribers.push( _ );
+        return _view;
+    };
+
+    function on_geometry_update () {
+
+        _subscribers.forEach( function ( cb ) { cb.apply( cb, arguments ); })
+
+    }
 
     return _view;
 

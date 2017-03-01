@@ -1,43 +1,70 @@
 
 var canvas = document.getElementById( 'canvas' );
-var renderer = adcirc.gl_renderer()
-    .on_error( on_error )
-    ( canvas );
+var renderer = adcirc.gl_renderer()( canvas );
 
-var n1 = new Float32Array([
-    25, 50, 0.6,
-    50, 25, 0.0,
-    50, 50, 1.0,
-    75, 50, 0.0,
-    75, 25, 0.5
-]);
-var nm1 = d3.map( [0, 1, 2, 3, 4] );
-var e1 = new Uint32Array([
-    0, 1, 2,
-    1, 2, 3,
-    1, 3, 4
-]);
-var em1 = d3.map( [0, 1, 2] );
+var nodes = [];
+var node_map = [];
+var elements = [];
+var element_map = [];
 
-var n2 = new Float32Array([ 475, 325, 0, 475, 275, 0, 425, 325, 0 ]);
-var elements = new Uint32Array([ 0, 1, 2 ]);
+var num_rows = 2;
+var num_cols = 10;
 
-var m1 = adcirc.mesh()
-    .nodes( { array: n1, map: nm1 } )
-    .elements( { array: e1, map: em1 } );
-    // .nodal_values( colors );
+var node_count = 0;
+var element_count = 0;
 
-var m2 = adcirc.mesh()
-    .nodes( n2 )
-    .elements( elements );
-    // .nodal_values( colors );
-
-renderer
-    .add_mesh( m1 );
-    // .add_mesh( m2 );
-
-renderer.zoom_to( m1, 250 );
-
-function on_error ( error ) {
-    console.log( error );
+for ( var row=0; row<num_rows; ++row ) {
+    for ( var col=0; col<num_cols; ++col ) {
+        nodes.push( col, row, 0 );
+        node_map.push( node_count++ );
+        if ( col < num_cols-1 && row < num_rows-1 ) {
+            elements.push( col, col+1, col+num_cols );
+            elements.push( col+1, col+num_cols, col+num_cols+1 );
+            element_map.push( element_count++, element_count++ );
+        }
+    }
 }
+
+node_map = d3.map( node_map );
+element_map = d3.map( element_map );
+
+var mesh = adcirc
+    .mesh()
+    .nodes( { array: nodes, map: node_map } )
+    .elements( { array: elements, map: element_map } );
+
+var geometry = adcirc
+    .geometry( renderer.gl_context() )
+    .mesh( mesh )
+    .nodal_value( 'height' );
+
+var shader = adcirc
+    .gradient_shader( renderer.gl_context(),
+        4,
+        geometry.bounding_box()[0][2],
+        geometry.bounding_box()[0][2]
+    );
+
+var view = adcirc
+    .view( renderer.gl_context() );
+
+renderer.add_view( view( geometry, shader ) )
+    .zoom_to( mesh, 250 );
+
+d3.interval( random_heights, 250 );
+
+function random_heights () {
+
+    var num_vals = num_rows * ( num_cols - 1 ) * 3;
+    var heights = [];
+    for ( var i=0; i<num_vals; ++i ) {
+        heights.push( Math.random() );
+    }
+
+    mesh.nodal_value( 'height', heights );
+
+}
+
+// renderer
+//     .add_mesh( mesh )
+//     .zoom_to( mesh, 250 );
