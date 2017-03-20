@@ -57,5 +57,10 @@ function gl_extensions ( gl ) {
 
 }
 
+function web_gl_available ( canvas ) {
 
-export { gl_extensions };
+    return !! ( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || canvas.getContext( 'experimental-webgl' ) ) );
+
+}
+
+export { gl_extensions, web_gl_available };

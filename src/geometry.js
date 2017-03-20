@@ -1,3 +1,31 @@
+import { dispatcher } from '../../adcirc-events/index'
+
+function geometry_new ( gl, mesh, indexed ) {
+
+    var _gl = gl;
+    var _mesh = mesh;
+    var _indexed = indexed;
+
+    var _buffers = d3.map();
+    var _geometry = dispatcher();
+
+    _geometry.bind_buffer = function ( attribute ) {
+
+        var buffer = _buffers.get( attribute );
+
+        if ( buffer ) {
+
+            _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
+            return buffer;
+
+        }
+
+    };
+
+
+    return _geometry;
+
+}
 
 function geometry ( gl, indexed ) {
 
