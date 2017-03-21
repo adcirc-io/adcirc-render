@@ -64,208 +64,9 @@ function gl_extensions ( gl ) {
 
 }
 
-function gl_shader ( gl, type, code, warn_cb, error_cb ) {
+function web_gl_available ( canvas ) {
 
-    var shader = gl.createShader( type );
-
-    gl.shaderSource( shader, code );
-    gl.compileShader( shader );
-
-    if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false ) {
-
-        var info = gl.getShaderInfoLog( shader );
-        if ( !error_cb ) error_cb = console.error;
-        error_cb( 'Unable to compile shader' );
-        error_cb( info );
-        gl.deleteShader( shader );
-        return;
-
-    }
-
-    if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false ) {
-
-        if ( !warn_cb ) warn_cb = console.warn;
-        warn_cb( gl.getShaderInfoLog( shader ), add_line_numbers( code ) );
-
-    }
-
-    return shader;
-
-}
-
-function add_line_numbers ( code ) {
-
-    var lines = code.split( '\n' );
-
-    for ( var i = 0; i < lines.length; i ++ ) {
-
-        lines[ i ] = ( i + 1 ) + ': ' + lines[ i ];
-
-    }
-
-    return lines.join( '\n' );
-
-}
-
-function gl_program ( gl, vertex_source, fragment_source, warn_cb, error_cb ) {
-
-    var shader_program = gl.createProgram();
-    var vertex_shader = gl_shader( gl, gl.VERTEX_SHADER, vertex_source, warn_cb, error_cb );
-    var fragment_shader = gl_shader( gl, gl.FRAGMENT_SHADER, fragment_source, warn_cb, error_cb );
-
-    if ( shader_program && vertex_shader && fragment_shader ) {
-
-        gl.attachShader( shader_program, vertex_shader );
-        gl.attachShader( shader_program, fragment_shader );
-        gl.linkProgram( shader_program );
-
-        if ( gl.getProgramParameter( shader_program, gl.LINK_STATUS ) === false ) {
-
-            if ( !error_cb ) error_cb = console.error;
-            error_cb( gl.getProgramInfoLog( shader_program ) );
-
-        }
-
-        gl.deleteShader( vertex_shader );
-        gl.deleteShader( fragment_shader );
-
-        return shader_program;
-
-    }
-
-}
-
-function basic_shader ( gl ) {
-
-    var _gl = gl;
-    var _program = gl_program( _gl, basic_vertex(), basic_fragment() );
-    var _face_color = d3.color( 'white' );
-    var _wire_color = d3.color( 'black' );
-    var _wire_alpha = 0.75;
-    var _wire_width = 1.0;
-
-    _gl.useProgram( _program );
-
-    var _attributes = d3.map({
-        'vertex_normal': _gl.getAttribLocation( _program, 'vertex_normal' ),
-        'vertex_position': _gl.getAttribLocation( _program, 'vertex_position' )
-    });
-
-    var _uniforms = d3.map({
-        'face_color': _gl.getUniformLocation( _program, 'face_color' ),
-        'projection_matrix': _gl.getUniformLocation( _program, 'projection_matrix' ),
-        'wire_alpha': _gl.getUniformLocation( _program, 'wire_alpha' ),
-        'wire_color': _gl.getUniformLocation( _program, 'wire_color' ),
-        'wire_width': _gl.getUniformLocation( _program, 'wire_width' )
-    });
-
-    _program.attribute = function ( attribute ) {
-        return _attributes.get( attribute );
-    };
-
-    _program.attributes = function ( _ ) {
-        if ( !arguments.length ) return _attributes.keys();
-        _attributes.each( _ );
-        return _program;
-    };
-
-    _program.face_color = function ( _ ) {
-        if ( !arguments.length ) return _face_color;
-        _face_color = _;
-        _gl.useProgram( _program );
-        _gl.uniform3fv( _program.uniform( 'face_color' ), [ _.r/255, _.g/255, _.b/255 ] );
-        return _program;
-    };
-
-    _program.set_projection = function ( matrix ) {
-
-        _gl.useProgram( _program );
-        _gl.uniformMatrix4fv( _program.uniform( 'projection_matrix' ), false, matrix );
-        return _program;
-    };
-
-    _program.wire_alpha = function ( _ ) {
-        if ( !arguments.length ) return _wire_alpha;
-        _wire_alpha = _;
-        _gl.useProgram( _program );
-        _gl.uniform1f( _program.uniform( 'wire_alpha' ), _ );
-        return _program;
-    };
-
-    _program.wire_color = function ( _ ) {
-        if ( !arguments.length ) return _wire_color;
-        _wire_color = _;
-        _gl.useProgram( _program );
-        _gl.uniform3fv( _program.uniform( 'wire_color' ), [_.r/255, _.g/255, _.b/255] );
-        return _program;
-    };
-
-    _program.wire_width = function ( _ ) {
-        if ( !arguments.length ) return _wire_width;
-        _wire_width = _;
-        _gl.useProgram( _program );
-        _gl.uniform1f( _program.uniform( 'wire_width' ), _ );
-        return _program;
-    };
-
-    _program.uniform = function ( uniform ) {
-        return _uniforms.get( uniform );
-    };
-
-    _program.uniforms = function () {
-        return _uniforms.keys();
-    };
-
-    _program.use = function () {
-
-        _gl.useProgram( _program );
-        return _program;
-
-    };
-
-    return _program
-        .face_color( _program.face_color() )
-        .wire_alpha( _program.wire_alpha() )
-        .wire_color( _program.wire_color() )
-        .wire_width( _program.wire_width() );
-
-}
-
-function basic_vertex () {
-
-    return [
-        'attribute vec3 vertex_position;',
-        'attribute vec3 vertex_normal;',
-        'uniform mat4 projection_matrix;',
-        'varying vec3 _vertex_normal;',
-        'void main( void ) {',
-        '   gl_Position = projection_matrix * vec4( vertex_position, 1.0 );',
-        '   _vertex_normal = vertex_normal;',
-        '}'
-    ].join('\n');
-
-}
-
-function basic_fragment () {
-
-    return [
-        '#extension GL_OES_standard_derivatives : enable',
-        'precision highp float;',
-        'varying vec3 _vertex_normal;',
-        'uniform vec3 face_color;',
-        'uniform vec3 wire_color;',
-        'uniform float wire_alpha;',
-        'uniform float wire_width;',
-        'float edgeFactorTri() {',
-        '   vec3 d = fwidth( _vertex_normal.xyz );',
-        '   vec3 a3 = smoothstep( vec3( 0.0 ), d * wire_width, _vertex_normal.xyz );',
-        '   return min( min( a3.x, a3.y ), a3.z );',
-        '}',
-        'void main() {',
-        '   vec4 wire = mix( vec4(face_color, 1.0), vec4(wire_color, 1.0), wire_alpha);',
-        '   gl_FragColor = mix( wire, vec4(face_color, 1.0), edgeFactorTri() );',
-        '}'
-    ].join('\n');
+    return !! ( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || canvas.getContext( 'experimental-webgl' ) ) );
 
 }
 
@@ -372,360 +173,212 @@ function m4 () {
 
 }
 
-function geometry ( gl, indexed ) {
+function dispatcher ( object ) {
 
-    var _gl = gl;
-    var _indexed = indexed || false;
+    object = object || Object.create( null );
 
-    var _buffers = d3.map();
+    var _listeners = {};
+    var _oneoffs = {};
 
-    var _bounding_box;
-    var _num_elements;
-    var _num_nodes;
+    object.on = function ( type, listener ) {
 
-    function _geometry ( mesh ) {
+        if ( !arguments.length ) return object;
+        if ( arguments.length == 1 ) return _listeners[ type ];
 
-        _bounding_box = mesh.bounding_box();
+        if ( _listeners[ type ] === undefined ) {
 
-        var _nodes = mesh.nodes();
-        var _elements = mesh.elements();
-
-        _num_elements = _elements.array.length;
-
-        if ( !_indexed ) {
-
-            _num_nodes = 3 * _num_elements;
-
-            var _node_array = new Float32Array( _num_nodes );
-
-            for ( var i=0; i<_num_elements; ++i ) {
-
-                var node_number = _elements.array[ i ];
-                var node_index = _nodes.map.get( node_number );
-
-                _node_array[ 3*i ] = _nodes.array[ 3*node_index ];
-                _node_array[ 3*i + 1 ] = _nodes.array[ 3*node_index + 1 ];
-                _node_array[ 3*i + 2 ] = _nodes.array[ 3*node_index + 2 ];
-
-            }
-
-            var _vertex_buffer = _gl.createBuffer();
-            _gl.bindBuffer( _gl.ARRAY_BUFFER, _vertex_buffer );
-            _gl.bufferData( _gl.ARRAY_BUFFER, _node_array, _gl.STATIC_DRAW );
-
-        } else {
-
-            _num_nodes = _nodes.array.length;
-
-            var _element_array = new Uint32Array( _num_elements );
-            for ( var i=0; i<_num_elements; ++i ) {
-
-                var node_number = _elements.array[ i ];
-                _element_array[ i ] = _nodes.map.get( node_number );
-
-            }
-
-            var _vertex_buffer = _gl.createBuffer();
-            _gl.bindBuffer( _gl.ARRAY_BUFFER, _vertex_buffer );
-            _gl.bufferData( _gl.ARRAY_BUFFER, _nodes.array, _gl.STATIC_DRAW );
-
-            var _element_buffer = _gl.createBuffer();
-            _gl.bindBuffer( _gl.ELEMENT_ARRAY_BUFFER, _element_buffer );
-            _gl.bufferData( _gl.ELEMENT_ARRAY_BUFFER, _element_array, _gl.STATIC_DRAW );
-
-            _buffers.set( 'element_array', {
-                buffer: _element_buffer
-            });
+            _listeners[ type ] = [];
 
         }
 
-        _buffers.set( 'vertex_position', {
-            buffer: _vertex_buffer,
-            size: 3,
-            type: _gl.FLOAT,
-            normalized: false,
-            stride: 0,
-            offset: 0
-        });
+        if ( _listeners[ type ].indexOf( listener ) === - 1 ) {
 
-        return _geometry;
-
-    }
-
-    _geometry.bind_buffer = function ( attribute ) {
-        var buffer = _buffers.get( attribute );
-        _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
-        return buffer;
-    };
-
-    _geometry.bind_element_array = function () {
-
-        var buffer = _buffers.get( 'element_array' );
-        _gl.bindBuffer( _gl.ELEMENT_ARRAY_BUFFER, buffer.buffer );
-        return _geometry;
-
-    };
-
-    _geometry.bounding_box = function () {
-        return _bounding_box;
-    };
-
-    _geometry.indexed = function () {
-        return _indexed;
-    };
-
-    _geometry.num_elements = function () {
-        return _num_elements;
-    };
-
-    _geometry.num_nodes = function () {
-        return _num_nodes;
-    };
-
-    _geometry.request_vertex_attribute = function ( attribute ) {
-
-        switch( attribute ) {
-
-            case 'vertex_normal':
-                var normals = build_vertex_normals();
-                var buffer = _gl.createBuffer();
-                _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer );
-                _gl.bufferData( _gl.ARRAY_BUFFER, normals, _gl.STATIC_DRAW );
-                _buffers.set( 'vertex_normal', {
-                    buffer: buffer,
-                    size: 3,
-                    type: _gl.FLOAT,
-                    normalized: false,
-                    stride: 0,
-                    offset: 0
-                });
-                break;
-
-            case 'vertex_position':
-                break;
-
-            default:
-                console.warn( attribute + ' attribute not supported' );
+            _listeners[ type ].push( listener );
 
         }
 
+        return object;
+
     };
 
+    object.once = function ( type, listener ) {
 
-    return _geometry;
+        if ( !arguments.length ) return object;
+        if ( arguments.length == 1 ) return _oneoffs[ type ];
 
+        if ( _oneoffs[ type ] === undefined ) {
 
-    function build_vertex_normals () {
+            _oneoffs[ type ] = [];
 
-        if ( !_indexed ) {
+        }
 
-            var _vertex_normals = new Float32Array( _num_nodes );
-            _vertex_normals.fill( 0 );
-            for ( var i=0; i<_num_nodes/9; ++i ) {
-                _vertex_normals[ 9 * i ] = 1;
-                _vertex_normals[ 9 * i + 4 ] = 1;
-                _vertex_normals[ 9 * i + 8 ] = 1;
+        if ( _oneoffs[ type ].indexOf( listener ) === - 1 ) {
+
+            _oneoffs[ type ].push( listener );
+
+        }
+
+        return object;
+
+    };
+
+    object.off = function ( type, listener ) {
+
+        var listenerArray = _listeners[ type ];
+        var oneoffArray = _oneoffs[ type ];
+        var index;
+
+        if ( listenerArray !== undefined ) {
+
+            index = listenerArray.indexOf( listener );
+
+            if ( index !== - 1 ) {
+
+                listenerArray.splice( index, 1 );
+
             }
 
-            return _vertex_normals;
+        }
+
+        if ( oneoffArray !== undefined ) {
+
+            index = oneoffArray.indexOf( listener );
+
+            if ( index !== -1 ) {
+
+                oneoffArray.splice( index, 1 );
+
+            }
 
         }
 
-        console.error( 'You shouldn\'t be making vertex normals for indexed arrays' );
+        return object;
 
-    }
+    };
+
+    object.dispatch = function ( event ) {
+
+        var listenerArray = _listeners[ event.type ];
+        var oneoffArray = _oneoffs[ event.type ];
+
+        var array = [], i, length;
+
+        if ( listenerArray !== undefined ) {
+
+            event.target = object;
+
+            length = listenerArray.length;
+
+            for ( i = 0; i < length; i ++ ) {
+
+                array[ i ] = listenerArray[ i ];
+
+            }
+
+            for ( i = 0; i < length; i ++ ) {
+
+                array[ i ].call( object, event );
+
+            }
+
+        }
+
+        if ( oneoffArray !== undefined ) {
+
+            event.target = object;
+
+            length = oneoffArray.length;
+
+            for ( i = 0; i < length; i ++ ) {
+
+                array[ i ] = oneoffArray[ i ];
+
+            }
+
+            for ( i = 0; i < length; i ++ ) {
+
+                array[ i ].call( object, event );
+
+            }
+
+            _oneoffs[ event.type ] = [];
+
+        }
+
+        return object;
+
+    };
+
+    return object;
 
 }
 
-function view ( gl ) {
+function gl_renderer ( selection ) {
 
-    var _gl = gl;
-    var _geometry;
-    var _shader;
+    var _renderer = dispatcher();
+    var _selection = selection;
+    var _canvas = selection.node();
 
-    function _view ( geometry, shader ) {
+    if ( !web_gl_available( _canvas ) ) return;
 
-        _geometry = geometry;
-        _shader = shader;
+    var _gl_attributes = { alpha: false, antialias: false, premultiplieAlpha: false, stencil: true };
+    var _gl = _canvas.getContext( 'webgl', _gl_attributes ) || _canvas.getContext( 'experimental-webgl', _gl_attributes);
 
-        _shader.attributes( function ( attribute, key ) {
-            _geometry.request_vertex_attribute( key );
-        });
+    if ( _gl === null ) return;
 
-        return _view;
+    var _extensions = gl_extensions( _gl );
+    _extensions.get( 'ANGLE_instanced_arrays' );
+    _extensions.get( 'OES_element_index_uint' );
+    _extensions.get( 'OES_standard_derivatives' );
 
-    }
-
-    _view.bounding_box = function () {
-        if ( _geometry ) return _geometry.bounding_box();
-        return [[null,null,null], [null,null,null]];
-    };
-
-    _view.render = function () {
-
-        if ( _geometry && _shader ) {
-
-            _shader.use();
-
-            _shader.attributes( function ( attribute, key ) {
-
-                var buffer = _geometry.bind_buffer( key );
-                _gl.vertexAttribPointer( attribute, buffer.size, buffer.type, buffer.normalized, buffer.stride, buffer.offset );
-                _gl.enableVertexAttribArray( attribute );
-
-            });
-
-            if ( _geometry.indexed() ) {
-
-                _geometry.bind_element_array();
-                _gl.drawElements(
-                    _gl.TRIANGLES,
-                    _geometry.num_elements() * 3,
-                    _gl.UNSIGNED_INT,
-                    0
-                );
-
-            } else {
-
-                _gl.drawArrays( _gl.TRIANGLES, 0, _geometry.num_nodes()/3 );
-
-            }
-
-        }
-
-        return _view;
-
-    };
-
-    _view.geometry = function () {
-        return _geometry;
-    };
-
-    _view.shader = function () {
-        return _shader;
-    };
-
-    return _view;
-
-}
-
-function gl_renderer () {
-
-    var _gl,
-        _extensions;
-
-    var _needs_render = true;
-
-    var _canvas,
-        _width = 300,
-        _height = 150,
-        _pixel_ratio = 1;
-
-    var _selection,
-        _zoom = d3.zoom().on( 'zoom', zoomed );
+    var _width = 0;
+    var _height = 0;
+    var _pixel_ratio = 1;
+    var _clear_color = d3.color( 'white' );
 
     var _projection_matrix = m4();
+    var _zoom = d3.zoom().on( 'zoom', zoomed );
+    _selection.call( _zoom );
 
-    var _clear_color = d3.color( '#666666' );
-
-    var _on_context_lost,
-        _on_error;
-
+    var _needs_render = true;
     var _views = [];
 
-    function _renderer ( canvas ) {
+    _renderer.add_view = function ( view ) {
 
-        // Keep local reference to the canvas
-        _canvas = canvas;
-        _selection = d3.select( _canvas );
-
-        // Verify webgl availability
-        if ( !web_gl_available( canvas ) ) {
-            if ( _on_error ) _on_error ( 'WebGL not supported' );
-            return;
-        }
-
-        // Acquire the webgl context
-        _gl = _canvas.getContext( 'webgl' ) || _canvas.getContext( 'experimental-webgl' );
-
-        if ( _gl === null ) {
-            if ( _on_error ) _on_error ( 'Error creating WebGL context' );
-            return;
-        }
-
-        // Connect any existing event listeners
-        if ( _on_context_lost ) _canvas.addEventListener( 'webglcontextlost', _on_context_lost, false );
-
-        // Load extensions
-        _extensions = gl_extensions( _gl );
-        _extensions.get( 'ANGLE_instanced_arrays' );
-        _extensions.get( 'OES_element_index_uint' );
-        _extensions.get( 'OES_standard_derivatives' );
-
-        // Set up the renderer
-        _renderer.clear_color( _renderer.clear_color() );
-        check_render();
-
-        // Set up interactivity
-        _selection.call( _zoom );
-
+        view.on( 'update', _renderer.render );
+        _views.push( view );
+        update_projection();
         return _renderer;
 
-    }
+    };
 
-    _renderer.add_mesh = function ( m ) {
+    _renderer.clear_color = function ( _ ) {
 
-        var geo = geometry( _gl )( m );
-        var shader = basic_shader( _gl );
-        // var shader = gradient_shader( _gl, 3 );
-        // var shader = gradient_shader( _gl, 3 )
-        //     .set_gradient( [ 0, 0.5, 1 ], [ d3.color('steelblue'), d3.color('white'), d3.color('green') ] )
-        //     .wire_color( d3.color( 'black' ) )
-        //     .set_wire_alpha( 0.25 )
-        //     .set_wire_width( 2.5 );
-        var vew = view( _gl );
+        if ( !arguments.length ) return _clear_color;
+        _clear_color = d3.rgb.apply( _clear_color, arguments );
 
-        _views.push( vew( geo, shader ) );
-
-        update_projection();
+        _gl.clearColor(
+            _clear_color.r / 255,
+            _clear_color.g / 255,
+            _clear_color.b / 255,
+            _clear_color.opacity
+        );
 
         return _renderer.render();
 
     };
 
-    _renderer.clear_color = function (_) {
-        if ( !arguments.length ) return _clear_color;
-        if ( arguments.length == 1 ) _clear_color = _;
-        if ( arguments.length == 3 ) _clear_color = d3.rgb( arguments[0], arguments[1], arguments[2] );
-        if ( arguments.length == 4 ) _clear_color = d3.rgb( arguments[0], arguments[1], arguments[2], arguments[3] );
-        if ( _gl && _clear_color ) {
-            _gl.clearColor(
-                _clear_color.r / 255,
-                _clear_color.g / 255,
-                _clear_color.b / 255,
-                _clear_color.opacity
-            );
-            _renderer.render();
-        }
-        return _renderer;
+    _renderer.gl_context = function () {
+
+        return _gl;
+
     };
 
-    _renderer.context = function (_) {
-        if ( !arguments.length ) return _gl;
-        _gl = _;
-        return _renderer;
-    };
+    _renderer.remove_view = function ( view ) {
 
-    _renderer.on_context_lost = function (_) {
-        if ( !arguments.length ) return _on_context_lost;
-        if ( typeof _ === 'function' ) _on_context_lost = _;
+        view.off( 'update', _renderer.render );
         return _renderer;
-    };
 
-    _renderer.on_error = function (_) {
-        if ( !arguments.length ) return _on_error;
-        if ( typeof _ === 'function' ) _on_error = _;
-        return _renderer;
     };
 
     _renderer.render = function () {
@@ -735,7 +388,7 @@ function gl_renderer () {
 
     };
 
-    _renderer.zoom_to = function (_) {
+    _renderer.zoom_to = function ( _ ) {
 
         if ( !arguments.length ) return _renderer;
 
@@ -761,10 +414,24 @@ function gl_renderer () {
                     .scale( scale )
             );
 
+        return _renderer;
+
     };
 
+    _canvas.addEventListener( 'webglcontextlost', bubble_event );
+    _canvas.addEventListener( 'webglcontextrestored', bubble_event );
+    _canvas.addEventListener( 'webglcontextcreationerror', bubble_event );
+
+    check_render();
 
     return _renderer;
+
+
+    function bubble_event ( event ) {
+
+        _renderer.dispatch( event );
+
+    }
 
     function check_render () {
 
@@ -791,7 +458,7 @@ function gl_renderer () {
 
     function resize () {
 
-        if ( _canvas.clientWidth != _width || _canvas.clientHeight != _height ) {
+        if ( _canvas.clientWidth !== _width || _canvas.clientHeight !== _height ) {
 
             _width = _canvas.clientWidth;
             _height = _canvas.clientHeight;
@@ -815,7 +482,7 @@ function gl_renderer () {
         }
 
         _projection_matrix
-            .ortho( 0, _width,  _height, 0, -10000, 10000 )
+            .ortho( 0, _width, _height, 0, -10000, 10000 )
             .translate( tx, ty, 0 )
             .scale( k, -k, 1 )
             .translate( 0, -_height, 0 );
@@ -827,115 +494,608 @@ function gl_renderer () {
     }
 
     function zoomed () {
+
         var t = d3.event.transform;
         update_projection( t.k, t.x, t.y );
         _renderer.render();
+
     }
-    
-}
-
-function web_gl_available ( canvas ) {
-
-    return !! ( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || canvas.getContext( 'experimental-webgl' ) ) );
 
 }
 
-function mesh () {
+function geometry ( gl, mesh ) {
 
-    var _nodes = { array: [], map: d3.map() };
-    var _elements = { array: [], map: d3.map() };
+    var _gl = gl;
+    var _mesh = mesh;
 
-    var _bounding_box;
+    var _num_triangles = 0;
+    var _num_vertices = 0;
 
-    function _mesh () {}
+    var _buffers = d3.map();
+    var _geometry = dispatcher();
 
-    _mesh.bounding_box = function () {
-        return _bounding_box;
-    };
+    _geometry.bind_buffer = function ( attribute ) {
 
-    _mesh.elements = function (_) {
-        if ( !arguments.length ) return _elements;
-        if ( _.array && _.map ) {
-            _elements = _;
-            _bounding_box = calculate_bbox( _nodes.array );
+        var buffer = _buffers.get( attribute );
+
+        if ( buffer ) {
+
+            _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
+            return buffer;
+
         }
-        return _mesh;
+
     };
 
-    _mesh.element_array = function ( _ ) {
-        if ( !arguments.length ) return _elements.array;
-        _elements.array = _;
-        return _mesh;
+    _geometry.bounding_box = function () {
+
+        return _mesh.bounding_box();
+
     };
 
-    _mesh.element_index = function ( element_number ) {
-        return _elements.map.get( element_number );
+    _geometry.drawArrays = function () {
+
+        _gl.drawArrays( _gl.TRIANGLES, 0, _num_triangles * 3 );
+
     };
 
-    _mesh.element_map = function ( _ ) {
-        if ( !arguments.length ) return _elements.map;
-        _elements.map = _;
-        return _mesh;
-    };
 
-    _mesh.nodes = function (_) {
-        if ( !arguments.length ) return _nodes;
-        if ( _.array && _.map ) {
-            _nodes = _;
-            _bounding_box = calculate_bbox( _nodes.array );
+    initialize( _mesh.nodes(), _mesh.elements() );
+
+    _mesh.on( 'elemental_value', on_elemental_value );
+    _mesh.on( 'nodal_value', on_nodal_value );
+
+
+    return _geometry;
+
+
+    function initialize ( nodes, elements ) {
+
+        _num_vertices = elements.array.length;
+        _num_triangles = elements.array.length / 3;
+
+        var vertex_position = new Float32Array( 2 * _num_vertices );
+        var vertex_value = new Float32Array( _num_vertices );
+        var vertex_normals = new Float32Array( 3 * _num_vertices );
+
+        var dimensions = nodes.dimensions;
+        for ( var i=0; i<_num_vertices; ++i ) {
+
+            var node_number = elements.array[ i ];
+            var node_index = nodes.map.get( node_number );
+
+            vertex_position[ 2 * i ] = nodes.array[ dimensions * node_index ];
+            vertex_position[ 2 * i + 1 ] = nodes.array[ dimensions * node_index + 1 ];
+
         }
-        return _mesh;
-    };
 
-    _mesh.node_array = function ( _ ) {
-        if ( !arguments.length ) return _nodes.array;
-        _nodes.array = _;
-        calculate_bbox( _mesh.node_array() );
-        return _mesh;
-    };
+        for ( var i=0; i<_num_triangles; ++i ) {
+            vertex_normals[ 9 * i ] = 1;
+            vertex_normals[ 9 * i + 4 ] = 1;
+            vertex_normals[ 9 * i + 8 ] = 1;
+        }
 
-    _mesh.node_index = function ( node_number ) {
-        return _nodes.map.get( node_number );
-    };
+        var position_buffer = _gl.createBuffer();
+        _gl.bindBuffer( _gl.ARRAY_BUFFER, position_buffer );
+        _gl.bufferData( _gl.ARRAY_BUFFER, vertex_position, _gl.STATIC_DRAW );
 
-    _mesh.node_map = function ( _ ) {
-        if ( !arguments.length ) return _nodes.map;
-        _nodes.map = _;
-        return _mesh;
-    };
+        var value_buffer = _gl.createBuffer();
+        _gl.bindBuffer( _gl.ARRAY_BUFFER, value_buffer );
+        _gl.bufferData( _gl.ARRAY_BUFFER, vertex_value, _gl.DYNAMIC_DRAW );
 
-    _mesh.num_elements = function () {
-        return _elements ? _elements.length / 3 : 0;
-    };
+        var normal_buffer = _gl.createBuffer();
+        _gl.bindBuffer( _gl.ARRAY_BUFFER, normal_buffer );
+        _gl.bufferData( _gl.ARRAY_BUFFER, vertex_normals, _gl.STATIC_DRAW );
 
-    _mesh.num_nodes = function () {
-        return _nodes ? _nodes.array.length / 3 : 0;
-    };
+        _buffers.set( 'vertex_position', {
+            buffer: position_buffer,
+            size: 2,
+            type: _gl.FLOAT,
+            normalized: false,
+            stride: 0,
+            offset: 0
+        });
 
-    return _mesh;
+        _buffers.set( 'vertex_value', {
+            buffer: value_buffer,
+            size: 1,
+            type: _gl.FLOAT,
+            normalized: false,
+            stride: 0,
+            offset: 0
+        });
 
-}
+        _buffers.set( 'vertex_normal', {
+            buffer: normal_buffer,
+            size: 3,
+            type: _gl.FLOAT,
+            normalized: false,
+            stride: 0,
+            offset: 0
+        });
 
-function calculate_bbox ( node_array ) {
 
-    var numnodes = node_array.length/3;
-    var minx = Infinity, maxx = -Infinity;
-    var miny = Infinity, maxy = -Infinity;
-    var minz = Infinity, maxz = -Infinity;
-    for ( var i=0; i<numnodes; ++i ) {
-        if ( node_array[3*i] < minx ) minx = node_array[3*i];
-        else if ( node_array[3*i] > maxx ) maxx = node_array[3*i];
-        if ( node_array[3*i+1] < miny ) miny = node_array[3*i+1];
-        else if ( node_array[3*i+1] > maxy ) maxy = node_array[3*i+1];
-        if ( node_array[3*i+2] < minz ) minz = node_array[3*i+2];
-        else if ( node_array[3*i+2] > maxz ) maxz = node_array[3*i+2];
     }
-    return [[minx, miny, minz], [maxx, maxy, maxz]];
+
+    function on_elemental_value ( event ) {
+
+        var data = new Float32Array( 3 * _num_triangles );
+
+        for ( var i=0; i<_num_triangles; ++i ) {
+
+            var value = event.array[i];
+
+            data[ 3 * i ] = value;
+            data[ 3 * i + 1 ] = value;
+            data[ 3 * i + 2 ] = value;
+
+        }
+
+        var buffer = _buffers.get( 'vertex_value' );
+        _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
+        _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, data );
+
+        _geometry.dispatch({
+            type: 'update',
+            value: event.value
+        });
+
+    }
+
+    function on_nodal_value ( event ) {
+
+        var data = new Float32Array( 3 * _num_triangles );
+        var nodes = _mesh.nodes();
+        var elements = _mesh.elements();
+
+        for ( var i=0; i<3*_num_triangles; ++i ) {
+
+            var node_number = elements.array[ i ];
+            var node_index = nodes.map.get( node_number );
+
+            data[ i ] = values[ node_index ];
+
+        }
+
+        var buffer = _buffers.get( 'vertex_value' );
+        _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
+        _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, data );
+
+        _geometry.dispatch({
+            type: 'update',
+            value: event.value
+        });
+
+    }
+
+}
+
+function view ( gl, geometry, shader ) {
+
+    var _gl = gl;
+    var _geometry = geometry;
+    var _shader = shader;
+
+    var _view = dispatcher();
+
+    _view.render = function () {
+
+        _shader.use();
+
+        _shader.attributes().each( function ( attribute, key ) {
+
+            var buffer = _geometry.bind_buffer( key );
+
+            if ( buffer !== 'undefined' ) {
+
+                _gl.vertexAttribPointer(
+                    attribute,
+                    buffer.size,
+                    buffer.type,
+                    buffer.normalize,
+                    buffer.stride,
+                    buffer.offset
+                );
+
+                _gl.enableVertexAttribArray( attribute );
+
+            }
+
+        } );
+
+        _geometry.drawArrays();
+
+    };
+
+    _view.shader = function () {
+
+        return _shader;
+
+    };
+
+    _geometry.on( 'update', _view.dispatch );
+
+    return _view;
+
+}
+
+function gl_shader ( gl, type, code, warn_cb, error_cb ) {
+
+    var shader = gl.createShader( type );
+
+    gl.shaderSource( shader, code );
+    gl.compileShader( shader );
+
+    if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false ) {
+
+        var info = gl.getShaderInfoLog( shader );
+        if ( !error_cb ) error_cb = console.error;
+        error_cb( 'Unable to compile shader' );
+        error_cb( info );
+        gl.deleteShader( shader );
+        return;
+
+    }
+
+    if ( gl.getShaderParameter( shader, gl.COMPILE_STATUS ) === false ) {
+
+        if ( !warn_cb ) warn_cb = console.warn;
+        warn_cb( gl.getShaderInfoLog( shader ), add_line_numbers( code ) );
+
+    }
+
+    return shader;
+
+}
+
+function add_line_numbers ( code ) {
+
+    var lines = code.split( '\n' );
+
+    for ( var i = 0; i < lines.length; i ++ ) {
+
+        lines[ i ] = ( i + 1 ) + ': ' + lines[ i ];
+
+    }
+
+    return lines.join( '\n' );
+
+}
+
+function gl_program ( gl, vertex_source, fragment_source, warn_cb, error_cb ) {
+
+    var shader_program = gl.createProgram();
+    var vertex_shader = gl_shader( gl, gl.VERTEX_SHADER, vertex_source, warn_cb, error_cb );
+    var fragment_shader = gl_shader( gl, gl.FRAGMENT_SHADER, fragment_source, warn_cb, error_cb );
+
+    if ( shader_program && vertex_shader && fragment_shader ) {
+
+        gl.attachShader( shader_program, vertex_shader );
+        gl.attachShader( shader_program, fragment_shader );
+        gl.linkProgram( shader_program );
+
+        if ( gl.getProgramParameter( shader_program, gl.LINK_STATUS ) === false ) {
+
+            if ( !error_cb ) error_cb = console.error;
+            error_cb( gl.getProgramInfoLog( shader_program ) );
+
+        }
+
+        gl.deleteShader( vertex_shader );
+        gl.deleteShader( fragment_shader );
+
+        return shader_program;
+
+    }
+
+}
+
+function basic_shader ( gl ) {
+
+    var _gl = gl;
+    var _program = gl_program( _gl, basic_vertex(), basic_fragment() );
+    var _face_color = d3.color( 'white' );
+    var _wire_color = d3.color( 'black' );
+    var _wire_alpha = 0.3;
+    var _wire_width = 1.0;
+
+    _gl.useProgram( _program );
+
+    var _attributes = d3.map({
+        'vertex_normal': _gl.getAttribLocation( _program, 'vertex_normal' ),
+        'vertex_position': _gl.getAttribLocation( _program, 'vertex_position' )
+    });
+
+    var _uniforms = d3.map({
+        'face_color': _gl.getUniformLocation( _program, 'face_color' ),
+        'projection_matrix': _gl.getUniformLocation( _program, 'projection_matrix' ),
+        'wire_alpha': _gl.getUniformLocation( _program, 'wire_alpha' ),
+        'wire_color': _gl.getUniformLocation( _program, 'wire_color' ),
+        'wire_width': _gl.getUniformLocation( _program, 'wire_width' )
+    });
+
+    _program.attribute = function ( attribute ) {
+        return _attributes.get( attribute );
+    };
+
+    _program.attributes = function ( _ ) {
+        if ( !arguments.length ) return _attributes;
+        _attributes.each( _ );
+        return _program;
+    };
+
+    _program.face_color = function ( _ ) {
+        if ( !arguments.length ) return _face_color;
+        _face_color = _;
+        _gl.useProgram( _program );
+        _gl.uniform3fv( _program.uniform( 'face_color' ), [ _.r/255, _.g/255, _.b/255 ] );
+        return _program;
+    };
+
+    _program.set_projection = function ( matrix ) {
+
+        _gl.useProgram( _program );
+        _gl.uniformMatrix4fv( _program.uniform( 'projection_matrix' ), false, matrix );
+        return _program;
+    };
+
+    _program.wire_alpha = function ( _ ) {
+        if ( !arguments.length ) return _wire_alpha;
+        _wire_alpha = _;
+        _gl.useProgram( _program );
+        _gl.uniform1f( _program.uniform( 'wire_alpha' ), _ );
+        return _program;
+    };
+
+    _program.wire_color = function ( _ ) {
+        if ( !arguments.length ) return _wire_color;
+        _wire_color = _;
+        _gl.useProgram( _program );
+        _gl.uniform3fv( _program.uniform( 'wire_color' ), [_.r/255, _.g/255, _.b/255] );
+        return _program;
+    };
+
+    _program.wire_width = function ( _ ) {
+        if ( !arguments.length ) return _wire_width;
+        _wire_width = _;
+        _gl.useProgram( _program );
+        _gl.uniform1f( _program.uniform( 'wire_width' ), _ );
+        return _program;
+    };
+
+    _program.uniform = function ( uniform ) {
+        return _uniforms.get( uniform );
+    };
+
+    _program.uniforms = function () {
+        return _uniforms.keys();
+    };
+
+    _program.use = function () {
+
+        _gl.useProgram( _program );
+        return _program;
+
+    };
+
+    return _program
+        .face_color( _program.face_color() )
+        .wire_alpha( _program.wire_alpha() )
+        .wire_color( _program.wire_color() )
+        .wire_width( _program.wire_width() );
+
+}
+
+function basic_vertex () {
+
+    return [
+        'attribute vec3 vertex_position;',
+        'attribute vec3 vertex_normal;',
+        'uniform mat4 projection_matrix;',
+        'varying vec3 _vertex_normal;',
+        'void main( void ) {',
+        '   gl_Position = projection_matrix * vec4( vertex_position, 1.0 );',
+        '   _vertex_normal = vertex_normal;',
+        '}'
+    ].join('\n');
+
+}
+
+function basic_fragment () {
+
+    return [
+        '#extension GL_OES_standard_derivatives : enable',
+        'precision highp float;',
+        'varying vec3 _vertex_normal;',
+        'uniform vec3 face_color;',
+        'uniform vec3 wire_color;',
+        'uniform float wire_alpha;',
+        'uniform float wire_width;',
+        'float edgeFactorTri() {',
+        '   vec3 d = fwidth( _vertex_normal.xyz );',
+        '   vec3 a3 = smoothstep( vec3( 0.0 ), d * wire_width, _vertex_normal.xyz );',
+        '   return min( min( a3.x, a3.y ), a3.z );',
+        '}',
+        'void main() {',
+        '   vec4 wire = mix( vec4(face_color, 1.0), vec4(wire_color, 1.0), wire_alpha);',
+        '   gl_FragColor = mix( wire, vec4(face_color, 1.0), edgeFactorTri() );',
+        '}'
+    ].join('\n');
+
+}
+
+function gradient_shader ( gl, num_colors, min, max ) {
+
+    var _gl = gl;
+    var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
+    var _gradient_colors = [];
+    var _gradient_stops = [];
+    var _wire_color = d3.color( 'black' );
+    var _wire_alpha = 0.3;
+    var _wire_width = 1.0;
+
+    var min = min || 0;
+    var max = max || 1;
+    for ( var i=0; i<num_colors; ++i ) {
+        _gradient_stops.push( min + ( max-min ) * i/(num_colors-1) );
+        _gradient_colors.push( d3.color( d3.schemeCategory20c[i%num_colors] ) );
+    }
+
+    _gl.useProgram( _program );
+
+    var _attributes = d3.map({
+        'vertex_normal': _gl.getAttribLocation( _program, 'vertex_normal' ),
+        'vertex_position': _gl.getAttribLocation( _program, 'vertex_position' ),
+        'vertex_value': _gl.getAttribLocation( _program, 'vertex_value' )
+    });
+
+    var _uniforms = d3.map({
+        'gradient_colors': _gl.getUniformLocation( _program, 'gradient_colors' ),
+        'gradient_stops': _gl.getUniformLocation( _program, 'gradient_stops' ),
+        'projection_matrix': _gl.getUniformLocation( _program, 'projection_matrix' ),
+        'wire_alpha': _gl.getUniformLocation( _program, 'wire_alpha' ),
+        'wire_color': _gl.getUniformLocation( _program, 'wire_color' ),
+        'wire_width': _gl.getUniformLocation( _program, 'wire_width' )
+    });
+
+    _program.attribute = function ( attribute ) {
+        return _attributes.get( attribute );
+    };
+
+    _program.attributes = function ( _ ) {
+        if ( !arguments.length ) return _attributes;
+        _attributes.each( _ );
+        return _program;
+    };
+
+    _program.gradient_colors = function ( _ ) {
+        if ( !arguments.length ) return _gradient_colors;
+        _gradient_colors = _;
+        var flattened = _gradient_colors
+            .map( function ( color ) { return [ color.r/255, color.g/255, color.b/255 ] } )
+            .reduce( function ( a, b ) { return a.concat( b ); }, [] );
+        _gl.useProgram( _program );
+        _gl.uniform3fv( _program.uniform( 'gradient_colors' ), flattened );
+        return _program;
+    };
+
+    _program.gradient_stops = function ( _ ) {
+        if ( !arguments.length ) return _gradient_stops;
+        _gradient_stops = _;
+        _gl.useProgram( _program );
+        _gl.uniform1fv( _program.uniform( 'gradient_stops' ), _gradient_stops );
+        return _program;
+    };
+
+    _program.set_projection = function ( matrix ) {
+        _gl.useProgram( _program );
+        _gl.uniformMatrix4fv( _program.uniform( 'projection_matrix' ), false, matrix );
+        return _program;
+    };
+
+    _program.wire_alpha = function ( _ ) {
+        if ( !arguments.length ) return _wire_alpha;
+        _wire_alpha = _;
+        _gl.useProgram( _program );
+        _gl.uniform1f( _program.uniform( 'wire_alpha' ), _ );
+        return _program;
+    };
+
+    _program.wire_color = function ( _ ) {
+        if ( !arguments.length ) return _wire_color;
+        _wire_color = _;
+        _gl.useProgram( _program );
+        _gl.uniform3fv( _program.uniform( 'wire_color' ), [_.r/255, _.g/255, _.b/255] );
+        return _program;
+    };
+
+    _program.wire_width = function ( _ ) {
+        if ( !arguments.length ) return _wire_width;
+        _wire_width = _;
+        _gl.useProgram( _program );
+        _gl.uniform1f( _program.uniform( 'wire_width' ), _ );
+        return _program;
+    };
+
+    _program.uniform = function ( uniform ) {
+        return _uniforms.get( uniform );
+    };
+
+    _program.uniforms = function () {
+        return _uniforms.keys();
+    };
+
+    _program.use = function () {
+        _gl.useProgram( _program );
+        return _program;
+    };
+
+    return _program
+        .gradient_colors( _program.gradient_colors() )
+        .gradient_stops( _program.gradient_stops() )
+        .wire_alpha( _program.wire_alpha() )
+        .wire_color( _program.wire_color() )
+        .wire_width( _program.wire_width() );
+
+}
+
+function gradient_vertex ( num_colors ) {
+
+    var code = [
+        'attribute vec2 vertex_position;',
+        'attribute vec3 vertex_normal;',
+        'attribute float vertex_value;',
+        'uniform mat4 projection_matrix;',
+        'uniform float gradient_stops[' + num_colors + '];',
+        'uniform vec3 gradient_colors[' + num_colors + '];',
+        'varying vec3 _vertex_normal;',
+        'varying vec3 _vertex_color;',
+        'void main() {',
+        '  gl_Position = projection_matrix * vec4( vertex_position, vertex_value, 1.0 );',
+        '  _vertex_normal = vertex_normal;',
+        '  _vertex_color = gradient_colors[0];',
+        '  float t;'
+    ];
+
+    for ( var i=1; i<num_colors; ++i ) {
+        code.push( '  t = clamp((vertex_value - gradient_stops['+(i-1)+']) / (gradient_stops['+i+']-gradient_stops['+(i-1)+']), 0.0, 1.0);' );
+        code.push( '  _vertex_color = mix( _vertex_color, gradient_colors['+i+'], t*t*(3.0-2.0*t));');
+    }
+
+    code.push('}');
+
+    return code.join( '\n' );
+
+}
+
+function gradient_fragment () {
+
+    return [
+        '#extension GL_OES_standard_derivatives : enable',
+        'precision mediump float;',
+        'varying vec3 _vertex_normal;',
+        'varying vec3 _vertex_color;',
+        'uniform vec3 wire_color;',
+        'uniform float wire_alpha;',
+        'uniform float wire_width;',
+        'float edgeFactorTri() {',
+        '   vec3 d = fwidth( _vertex_normal.xyz );',
+        '   vec3 a3 = smoothstep( vec3( 0.0 ), d * wire_width, _vertex_normal.xyz );',
+        '   return min( min( a3.x, a3.y ), a3.z );',
+        '}',
+        'void main() {',
+        '   vec4 wire = mix( vec4(_vertex_color, 1.0), vec4(wire_color, 1.0), wire_alpha);',
+        '   gl_FragColor = mix( wire, vec4(_vertex_color, 1.0), edgeFactorTri() );',
+        '}'
+    ].join('\n');
 
 }
 
 exports.gl_renderer = gl_renderer;
-exports.mesh = mesh;
+exports.geometry = geometry;
+exports.view = view;
+exports.basic_shader = basic_shader;
+exports.gradient_shader = gradient_shader;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
