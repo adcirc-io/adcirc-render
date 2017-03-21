@@ -20,8 +20,8 @@ function gl_renderer ( selection ) {
     _extensions.get( 'OES_element_index_uint' );
     _extensions.get( 'OES_standard_derivatives' );
 
-    var _width = _canvas.clientWidth;
-    var _height = _canvas.clientHeight;
+    var _width = 0;
+    var _height = 0;
     var _pixel_ratio = 1;
     var _clear_color = d3.color( 'white' );
 

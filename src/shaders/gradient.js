@@ -39,7 +39,7 @@ function gradient_shader ( gl, num_colors, min, max ) {
     };
 
     _program.attributes = function ( _ ) {
-        if ( !arguments.length ) return _attributes.keys();
+        if ( !arguments.length ) return _attributes;
         _attributes.each( _ );
         return _program;
     };

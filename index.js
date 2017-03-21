@@ -1,5 +1,4 @@
 export { gl_renderer } from './src/renderer'
-// export { mesh } from './src/mesh'
 export { geometry } from './src/geometry'
 export { view } from './src/view'
 export { basic_shader } from './src/shaders/basic'

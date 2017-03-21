@@ -1,90 +1,49 @@
+import { dispatcher } from '../../adcirc-events/index'
 
-function view ( gl ) {
+function view ( gl, geometry, shader ) {
 
     var _gl = gl;
-    var _geometry;
-    var _shader;
+    var _geometry = geometry;
+    var _shader = shader;
 
-    var _subscribers = [];
-
-    function _view ( geometry, shader ) {
-
-        _geometry = geometry;
-        _shader = shader;
-
-        _shader.attributes( function ( attribute, key ) {
-            _geometry.request_vertex_attribute( key );
-        });
-
-        _geometry.subscribe( on_geometry_update );
-
-        return _view;
-
-    }
-
-    _view.bounding_box = function () {
-        if ( _geometry ) return _geometry.bounding_box();
-        return [[null,null,null], [null,null,null]];
-    };
-
-    _view.geometry = function () {
-        return _geometry;
-    };
+    var _view = dispatcher();
 
     _view.render = function () {
 
-        if ( _geometry && _shader ) {
+        _shader.use();
 
-            _shader.use();
+        _shader.attributes().each( function ( attribute, key ) {
 
-            _shader.attributes( function ( attribute, key ) {
+            var buffer = _geometry.bind_buffer( key );
 
-                var buffer = _geometry.bind_buffer( key );
-                _gl.vertexAttribPointer( attribute, buffer.size, buffer.type, buffer.normalized, buffer.stride, buffer.offset );
-                _gl.enableVertexAttribArray( attribute );
+            if ( buffer !== 'undefined' ) {
 
-            });
-
-            if ( _geometry.indexed() ) {
-
-                _geometry.bind_element_array();
-                _gl.drawElements(
-                    _gl.TRIANGLES,
-                    _geometry.num_triangles() * 3,
-                    _gl.UNSIGNED_INT,
-                    0
+                _gl.vertexAttribPointer(
+                    attribute,
+                    buffer.size,
+                    buffer.type,
+                    buffer.normalize,
+                    buffer.stride,
+                    buffer.offset
                 );
 
-            } else {
-
-                _gl.drawArrays( _gl.TRIANGLES, 0, _geometry.num_triangles() * 3 );
+                _gl.enableVertexAttribArray( attribute );
 
             }
 
-        }
+        } );
 
-        return _view;
+        _geometry.drawArrays();
 
     };
 
     _view.shader = function () {
+
         return _shader;
+
     };
 
-    _view.subscribe = function ( _ ) {
-        if ( !arguments.length ) {
-            _subscribers = [];
-            return _view;
-        }
-        _subscribers.push( _ );
-        return _view;
-    };
-
-    function on_geometry_update () {
-
-        _subscribers.forEach( function ( cb ) { cb.apply( cb, arguments ); })
-
-    }
+    _geometry.on( 'update', _view.dispatch );
 
     return _view;
 

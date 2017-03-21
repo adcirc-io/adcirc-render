@@ -29,7 +29,7 @@ function basic_shader ( gl ) {
     };
 
     _program.attributes = function ( _ ) {
-        if ( !arguments.length ) return _attributes.keys();
+        if ( !arguments.length ) return _attributes;
         _attributes.each( _ );
         return _program;
     };
