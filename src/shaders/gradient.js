@@ -1,25 +1,28 @@
 import { gl_program } from '../gl_program'
 
-function gradient_shader ( gl, num_colors ) {
+function gradient_shader ( gl, num_colors, min, max ) {
 
     var _gl = gl;
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
     var _gradient_colors = [];
     var _gradient_stops = [];
     var _wire_color = d3.color( 'black' );
-    var _wire_alpha = 0.75;
-    var _wire_width = 2.0;
+    var _wire_alpha = 0.3;
+    var _wire_width = 1.0;
 
+    var min = min || 0;
+    var max = max || 1;
     for ( var i=0; i<num_colors; ++i ) {
-        _gradient_stops.push( i/(num_colors-1) );
-        _gradient_colors.push( d3.color( d3.schemeCategory20[i%num_colors] ) );
+        _gradient_stops.push( min + ( max-min ) * i/(num_colors-1) );
+        _gradient_colors.push( d3.color( d3.schemeCategory20c[i%num_colors] ) );
     }
 
     _gl.useProgram( _program );
 
     var _attributes = d3.map({
         'vertex_normal': _gl.getAttribLocation( _program, 'vertex_normal' ),
-        'vertex_position': _gl.getAttribLocation( _program, 'vertex_position' )
+        'vertex_position': _gl.getAttribLocation( _program, 'vertex_position' ),
+        'vertex_value': _gl.getAttribLocation( _program, 'vertex_value' )
     });
 
     var _uniforms = d3.map({
@@ -36,7 +39,7 @@ function gradient_shader ( gl, num_colors ) {
     };
 
     _program.attributes = function ( _ ) {
-        if ( !arguments.length ) return _attributes.keys();
+        if ( !arguments.length ) return _attributes;
         _attributes.each( _ );
         return _program;
     };
@@ -115,22 +118,23 @@ function gradient_shader ( gl, num_colors ) {
 function gradient_vertex ( num_colors ) {
 
     var code = [
-        'attribute vec3 vertex_position;',
+        'attribute vec2 vertex_position;',
         'attribute vec3 vertex_normal;',
+        'attribute float vertex_value;',
         'uniform mat4 projection_matrix;',
         'uniform float gradient_stops[' + num_colors + '];',
         'uniform vec3 gradient_colors[' + num_colors + '];',
         'varying vec3 _vertex_normal;',
         'varying vec3 _vertex_color;',
         'void main() {',
-        '  gl_Position = projection_matrix * vec4( vertex_position, 1.0 );',
+        '  gl_Position = projection_matrix * vec4( vertex_position, vertex_value, 1.0 );',
         '  _vertex_normal = vertex_normal;',
         '  _vertex_color = gradient_colors[0];',
         '  float t;'
     ];
 
     for ( var i=1; i<num_colors; ++i ) {
-        code.push( '  t = clamp((vertex_position.z - gradient_stops['+(i-1)+']) / (gradient_stops['+i+']-gradient_stops['+(i-1)+']), 0.0, 1.0);' );
+        code.push( '  t = clamp((vertex_value - gradient_stops['+(i-1)+']) / (gradient_stops['+i+']-gradient_stops['+(i-1)+']), 0.0, 1.0);' );
         code.push( '  _vertex_color = mix( _vertex_color, gradient_colors['+i+'], t*t*(3.0-2.0*t));')
     }
 

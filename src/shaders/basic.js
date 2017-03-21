@@ -6,7 +6,7 @@ function basic_shader ( gl ) {
     var _program = gl_program( _gl, basic_vertex(), basic_fragment() );
     var _face_color = d3.color( 'white' );
     var _wire_color = d3.color( 'black' );
-    var _wire_alpha = 0.75;
+    var _wire_alpha = 0.3;
     var _wire_width = 1.0;
 
     _gl.useProgram( _program );
@@ -29,7 +29,7 @@ function basic_shader ( gl ) {
     };
 
     _program.attributes = function ( _ ) {
-        if ( !arguments.length ) return _attributes.keys();
+        if ( !arguments.length ) return _attributes;
         _attributes.each( _ );
         return _program;
     };

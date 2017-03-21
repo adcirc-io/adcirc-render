@@ -3,6 +3,11 @@ function mesh () {
     var _nodes = { array: [], map: d3.map() };
     var _elements = { array: [], map: d3.map() };
 
+    var _nodal_values = d3.map();
+    var _elemental_values = d3.map();
+
+    var _subscribers = [];
+
     var _bounding_box;
 
     function _mesh () {}
@@ -11,11 +16,16 @@ function mesh () {
         return _bounding_box;
     };
 
+    _mesh.elemental_value = function ( value, array ) {
+        if ( arguments.length == 1 ) return _elemental_values.get( value );
+        if ( arguments.length == 2 ) _elemental_values.set( value, array );
+        _subscribers.forEach( function ( cb ) { cb( value ); } );
+    };
+
     _mesh.elements = function (_) {
         if ( !arguments.length ) return _elements;
         if ( _.array && _.map ) {
             _elements = _;
-            _bounding_box = calculate_bbox( _nodes.array );
         }
         return _mesh;
     };
@@ -33,6 +43,13 @@ function mesh () {
     _mesh.element_map = function ( _ ) {
         if ( !arguments.length ) return _elements.map;
         _elements.map = _;
+        return _mesh;
+    };
+
+    _mesh.nodal_value = function ( value, array ) {
+        if ( arguments.length == 1 ) return _nodal_values.get( value );
+        if ( arguments.length == 2 ) _nodal_values.set( value, array );
+        _subscribers.forEach( function ( cb ) { cb( value ); } );
         return _mesh;
     };
 
@@ -63,11 +80,15 @@ function mesh () {
     };
 
     _mesh.num_elements = function () {
-        return _elements ? _elements.length / 3 : 0;
+        return _elements.array.length / 3;
     };
 
     _mesh.num_nodes = function () {
-        return _nodes ? _nodes.array.length / 3 : 0;
+        return _nodes.array.length / 3;
+    };
+
+    _mesh.subscribe = function ( callback ) {
+        _subscribers.push( callback );
     };
 
     return _mesh;
