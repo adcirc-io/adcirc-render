@@ -65,8 +65,32 @@ Performs rendering of the entire mesh. Simply calls [drawArrays](https://develop
 
 _**Note to self: this is where I should implement rendering of portions of meshes. WebGL drawArrays accepts a start index and count, so this function could take a list of [start, count, start, count, ...] to allow for drawing subsets**_
 
+<a name="geometry-elemental-value" href="#geometry-elemental-value">#</a> *geometry*.**elemental_value**(*value*)
+
+If the mesh contains the elemental value *value*, fills the vertex value buffer with the data associated with that value.
+
+<a name="geometry-nodal-value" href="#geometry-nodal-value">#</a> *geometry*.**nodal_value**(*value*)
+
+If the mesh contains the nodal value *value*, fills the vertex value buffer with the data associated with that value.
+
 ## Shaders
 
 Shaders are used by adcirc-render to describe how a <a href="#adcirc-geometry">geometry</a> should be rendered.
 
 ## View
+
+<a name="view-elemental-value" href="#view-elemental-value">#</a> *view*.**elemental_value**(*value*)
+
+Instructs the geometry associated with this view to use the data associated with the elemental value *value*.
+
+<a name="view-nodal-value" href="#view-nodal-value">#</a> *view*.**nodal_value**(*value*)
+
+Instructs the geometry associated with this view to use the data associated with the nodal value *value*.
+
+<a name="view-render" href="#view-render">#</a> *view*.**render**()
+
+Renders the view.
+
+<a name="view-shader" href="#view-shader">#</a> *view*.**shader**()
+
+Returns the shader currently being used by the view.

@@ -8,6 +8,18 @@ function view ( gl, geometry, shader ) {
 
     var _view = dispatcher();
 
+    _view.elemental_value = function ( value ) {
+
+        _geometry.elemental_value( value );
+
+    };
+
+    _view.nodal_value = function ( value ) {
+
+        _geometry.nodal_value( value );
+
+    };
+
     _view.render = function () {
 
         _shader.use();

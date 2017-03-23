@@ -36,12 +36,42 @@ function geometry ( gl, mesh ) {
 
     };
 
+    _geometry.elemental_value = function ( value ) {
+
+        var data = _mesh.elemental_value( value );
+
+        if ( data ) {
+
+            set_elemental_value( data );
+
+            _geometry.dispatch({
+                type: 'update',
+                value: value
+            });
+
+        }
+
+    };
+
+    _geometry.nodal_value = function ( value ) {
+
+        var data = _mesh.nodal_value( value );
+
+        if ( data ) {
+
+            set_nodal_value( data );
+
+            _geometry.dispatch({
+                type: 'update',
+                value: value
+            });
+
+        }
+
+    };
+
 
     initialize( _mesh.nodes(), _mesh.elements() );
-
-    _mesh.on( 'elemental_value', on_elemental_value );
-    _mesh.on( 'nodal_value', on_nodal_value );
-
 
     return _geometry;
 
@@ -114,54 +144,44 @@ function geometry ( gl, mesh ) {
 
     }
 
-    function on_elemental_value ( event ) {
+    function set_elemental_value ( data ) {
 
-        var data = new Float32Array( 3 * _num_triangles );
+        var array = new Float32Array( 3 * _num_triangles );
 
         for ( var i=0; i<_num_triangles; ++i ) {
 
-            var value = event.array[i];
+            var value = data[i];
 
-            data[ 3 * i ] = value;
-            data[ 3 * i + 1 ] = value;
-            data[ 3 * i + 2 ] = value;
+            array[ 3 * i ] = value;
+            array[ 3 * i + 1 ] = value;
+            array[ 3 * i + 2 ] = value;
 
         }
 
         var buffer = _buffers.get( 'vertex_value' );
         _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
-        _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, data );
-
-        _geometry.dispatch({
-            type: 'update',
-            value: event.value
-        });
+        _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, array );
 
     }
 
-    function on_nodal_value ( event ) {
+    function set_nodal_value ( data ) {
 
-        var data = new Float32Array( 3 * _num_triangles );
-        var nodes = _mesh.nodes();
-        var elements = _mesh.elements();
+        var array = new Float32Array( 3 * _num_triangles );
+        var node_map = _mesh.nodes().map;
+        var elements = _mesh.elements().array;
 
         for ( var i=0; i<3*_num_triangles; ++i ) {
 
-            var node_number = elements.array[ i ];
-            var node_index = nodes.map.get( node_number );
+            var node_number = elements[ i ];
+            var node_index = node_map.get( node_number );
 
-            data[ i ] = values[ node_index ];
+            array[ i ] = data[ node_index ];
 
         }
 
         var buffer = _buffers.get( 'vertex_value' );
         _gl.bindBuffer( _gl.ARRAY_BUFFER, buffer.buffer );
-        _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, data );
-
-        _geometry.dispatch({
-            type: 'update',
-            value: event.value
-        });
+        _gl.bufferSubData( _gl.ARRAY_BUFFER, 0, array );
 
     }
 

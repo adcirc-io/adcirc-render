@@ -14,7 +14,8 @@ function gradient_shader ( gl, num_colors, min, max ) {
     var max = max || 1;
     for ( var i=0; i<num_colors; ++i ) {
         _gradient_stops.push( min + ( max-min ) * i/(num_colors-1) );
-        _gradient_colors.push( d3.color( d3.schemeCategory20c[i%num_colors] ) );
+        _gradient_colors.push( d3.color( d3.schemeCategory20[i%num_colors] ) );
+        console.log( _gradient_colors[i] );
     }
 
     _gl.useProgram( _program );
