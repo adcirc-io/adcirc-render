@@ -22,7 +22,7 @@ function view ( gl, geometry, shader ) {
                     attribute,
                     buffer.size,
                     buffer.type,
-                    buffer.normalize,
+                    buffer.normalized,
                     buffer.stride,
                     buffer.offset
                 );

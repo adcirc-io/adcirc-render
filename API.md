@@ -42,6 +42,29 @@ Creates a new geometry. *gl* is a WebGL rendering context, *mesh* is a <a href="
 
 <a name="geometry-bind-buffer" href="#geometry-bind-buffer">#</a> *geometry*.**bind_buffer**(*attribute*)
 
+Binds the requested *attribute*, if it is available, and returns the bound buffer. Returns undefined if the *attribute* is not available.
+
+The returned buffer is an object containing the following:
+
+* buffer
+* size
+* type
+* normalized
+* stride
+* offset
+
+See [vertexAttribPointer](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/vertexAttribPointer) documentation for description of each field. The buffer field is the WebGL array buffer.
+
+<a name="geometry-bounding-box" href="#geometry-bounding-box">#</a> *geometry*.**bounding_box**()
+
+Returns the bounding box of the mesh that the geometry is responsible for rendering.
+
+<a name="geometry-draw-arrays" href="#geometry-draw-arrays">#</a> *geometry*.**draw_arrays**()
+
+Performs rendering of the entire mesh. Simply calls [drawArrays](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/drawArrays) with the appropriate parameters.
+
+_**Note to self: this is where I should implement rendering of portions of meshes. WebGL drawArrays accepts a start index and count, so this function could take a list of [start, count, start, count, ...] to allow for drawing subsets**_
+
 ## Shaders
 
 Shaders are used by adcirc-render to describe how a <a href="#adcirc-geometry">geometry</a> should be rendered.
