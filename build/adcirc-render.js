@@ -493,7 +493,7 @@ function gl_renderer ( selection ) {
             .translate( 0, -_offset_y, 0 );
 
         for ( var i=0; i<_views.length; ++i ) {
-            _views[i].shader().set_projection( _projection_matrix );
+            _views[i].shader().projection( _projection_matrix );
         }
 
     }
@@ -706,12 +706,14 @@ function view ( gl, geometry, shader ) {
     _view.elemental_value = function ( value ) {
 
         _geometry.elemental_value( value );
+        return _view;
 
     };
 
     _view.nodal_value = function ( value ) {
 
         _geometry.nodal_value( value );
+        return _view;
 
     };
 
@@ -741,12 +743,17 @@ function view ( gl, geometry, shader ) {
         } );
 
         _geometry.drawArrays();
+        return _view;
 
     };
 
-    _view.shader = function () {
+    _view.shader = function ( _ ) {
 
-        return _shader;
+        if ( !arguments.length ) return _shader;
+        _.projection( _shader.projection() );
+        _shader = _;
+        _view.dispatch( { type: 'update' } );
+        return _view;
 
     };
 
@@ -967,6 +974,7 @@ function gradient_shader ( gl, num_colors, min, max ) {
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
     var _gradient_colors = [];
     var _gradient_stops = [];
+    var _projection;
     var _wire_color = d3.color( 'black' );
     var _wire_alpha = 0.3;
     var _wire_width = 1.0;
@@ -1024,7 +1032,9 @@ function gradient_shader ( gl, num_colors, min, max ) {
         return _program;
     };
 
-    _program.set_projection = function ( matrix ) {
+    _program.projection = function ( matrix ) {
+        if ( !arguments.length ) return _projection;
+        _projection = matrix;
         _gl.useProgram( _program );
         _gl.uniformMatrix4fv( _program.uniform( 'projection_matrix' ), false, matrix );
         return _program;

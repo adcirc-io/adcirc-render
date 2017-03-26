@@ -11,12 +11,14 @@ function view ( gl, geometry, shader ) {
     _view.elemental_value = function ( value ) {
 
         _geometry.elemental_value( value );
+        return _view;
 
     };
 
     _view.nodal_value = function ( value ) {
 
         _geometry.nodal_value( value );
+        return _view;
 
     };
 
@@ -46,12 +48,17 @@ function view ( gl, geometry, shader ) {
         } );
 
         _geometry.drawArrays();
+        return _view;
 
     };
 
-    _view.shader = function () {
+    _view.shader = function ( _ ) {
 
-        return _shader;
+        if ( !arguments.length ) return _shader;
+        _.projection( _shader.projection() );
+        _shader = _;
+        _view.dispatch( { type: 'update' } );
+        return _view;
 
     };
 

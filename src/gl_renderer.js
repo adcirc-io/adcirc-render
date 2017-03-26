@@ -182,7 +182,7 @@ function gl_renderer ( selection ) {
             .translate( 0, -_offset_y, 0 );
 
         for ( var i=0; i<_views.length; ++i ) {
-            _views[i].shader().set_projection( _projection_matrix );
+            _views[i].shader().projection( _projection_matrix );
         }
 
     }

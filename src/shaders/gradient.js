@@ -6,6 +6,7 @@ function gradient_shader ( gl, num_colors, min, max ) {
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
     var _gradient_colors = [];
     var _gradient_stops = [];
+    var _projection;
     var _wire_color = d3.color( 'black' );
     var _wire_alpha = 0.3;
     var _wire_width = 1.0;
@@ -63,7 +64,9 @@ function gradient_shader ( gl, num_colors, min, max ) {
         return _program;
     };
 
-    _program.set_projection = function ( matrix ) {
+    _program.projection = function ( matrix ) {
+        if ( !arguments.length ) return _projection;
+        _projection = matrix;
         _gl.useProgram( _program );
         _gl.uniformMatrix4fv( _program.uniform( 'projection_matrix' ), false, matrix );
         return _program;
