@@ -30,7 +30,7 @@ Requests that the renderer redraw all views. Note that this is a deferred render
 
 <a name="renderer-zoom-to" href="#renderer-zoom-to">#</a> *gl_renderer*.**zoom_to**(*geometry*)
 
-Tranlates and zooms the renderer view to the bounding box of *geometry*.
+Translates and zooms the renderer view to the bounding box of *geometry*.
 
 ## Geometry
 

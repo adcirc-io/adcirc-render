@@ -10,10 +10,11 @@ var num_cols = 10;
 
 var node_count = 0;
 var element_count = 0;
+var mul = 10;
 
 for ( var row=0; row<num_rows; ++row ) {
     for ( var col=0; col<num_cols; ++col ) {
-        nodes.push( col, row, 0 );
+        nodes.push( mul*col, mul*row, 0 );
         node_map.push( node_count++ );
         if ( col < num_cols-1 && row < num_rows-1 ) {
             elements.push( col, col+1, col+num_cols );
@@ -67,5 +68,6 @@ function random_heights () {
     }
 
     mesh.elemental_value( 'height', heights );
+    geometry.elemental_value( 'height' );
 
 }

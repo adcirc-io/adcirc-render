@@ -22,6 +22,7 @@ function gl_renderer ( selection ) {
 
     var _width = 0;
     var _height = 0;
+    var _offset_y;
     var _pixel_ratio = 1;
     var _clear_color = d3.color( 'white' );
 
@@ -154,7 +155,11 @@ function gl_renderer ( selection ) {
             _canvas.width = _width * _pixel_ratio;
             _canvas.height = _height * _pixel_ratio;
             _gl.viewport( 0, 0, _width, _height );
+
+            if ( !_offset_y || _offset_y < 0 ) _offset_y = _height;
+
             update_projection();
+
             return true;
 
         }
@@ -174,7 +179,7 @@ function gl_renderer ( selection ) {
             .ortho( 0, _width, _height, 0, -10000, 10000 )
             .translate( tx, ty, 0 )
             .scale( k, -k, 1 )
-            .translate( 0, -_height, 0 );
+            .translate( 0, -_offset_y, 0 );
 
         for ( var i=0; i<_views.length; ++i ) {
             _views[i].shader().set_projection( _projection_matrix );
