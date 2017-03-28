@@ -47,7 +47,7 @@ function view ( gl, geometry, shader ) {
 
         } );
 
-        _geometry.drawArrays();
+        _geometry.draw_arrays();
         return _view;
 
     };

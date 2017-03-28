@@ -30,7 +30,7 @@ function geometry ( gl, mesh ) {
 
     };
 
-    _geometry.drawArrays = function () {
+    _geometry.draw_arrays = function () {
 
         _gl.drawArrays( _gl.TRIANGLES, 0, _num_triangles * 3 );
 

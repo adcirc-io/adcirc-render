@@ -128,7 +128,11 @@ function basic_fragment () {
         '}',
         'void main() {',
         '   vec4 wire = mix( vec4(face_color, 1.0), vec4(wire_color, 1.0), wire_alpha);',
-        '   gl_FragColor = mix( wire, vec4(face_color, 1.0), edgeFactorTri() );',
+        '   if ( wire_width == 0.0 ) {',
+        '       gl_FragColor = vec4(_vertex_color, 1.0);',
+        '   } else {',
+        '       gl_FragColor = mix( wire, vec4(_vertex_color, 1.0), edgeFactorTri() );',
+        '   }',
         '}'
     ].join('\n');
 
