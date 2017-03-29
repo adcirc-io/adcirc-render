@@ -60,12 +60,12 @@ Binds the requested *attribute*, if it is available, and returns the bound buffe
 
 The returned buffer is an object containing the following:
 
-* buffer
-* size
-* type
-* normalized
-* stride
-* offset
+* `buffer`
+* `size`
+* `type`
+* `normalized`
+* `stride`
+* `offset`
 
 See [vertexAttribPointer](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/vertexAttribPointer) documentation for description of each field. The buffer field is the WebGL array buffer.
 
@@ -127,17 +127,51 @@ All shaders will have the 'projection_matrix' uniform, and all shaders that prov
 
 Instructs the rendering context to use the shader program for any subsequent rendering calls.
 
+<a name="shader-wire-alpha" href="#shader-wire-alpha">#</a> *shader*.**wire_alpha**([*alpha*])
+
+*Only available to shaders that provide wireframe rendering*
+
+Returns the wire alpha, a value in the range [0, 1], if *alpha* is not provided. Sets the alpha value and returns the shader if *alpha* is provided.
+
+<a name="shader-wire-color" href="#shader-wire-color">#</a> *shader*.**wire_color**([*color*])
+
+*Only available to shaders that provide wireframe rendering*
+
+Returns the wire color if *color* is not provided. Sets the wire color and returns the shader if *color* is provided.
+
+<a name="shader-wire-width" href="#shader-wire-width">#</a> *shader*.**wire_width**([*width])
+
+*Only available to shaders that provide wireframe rendering*
+
+Return the wire width if *width* is not provided. Sets the wire width and returns the shader if *width* is provided.
+
 #### Basic Shader
+
+A basic shader renders a mesh a single color. Supports wireframe.
 
 <a name="adcirc-basic-shader" href="#adcirc-basic-shader">#</a> *adcirc*.**basic_shader**(*gl*)
 
 Creates a basic shader using the WebGL context *gl*.
 
+<a name="basic-shader-face-color" href="#basic-shader-face-color">#</a> *basic_shader*.**face_color**([*color*])
+
+Gets or sets the uniform color used to render the mesh.
+
 #### Gradient Shader
 
-<a name="adcirc-gradient-shader" href="#adcirc-gradient-shader">#</a> *adcirc*.**gradient_shader**(*gl*)
+A gradient shader renders a mesh using any number of colors, linearly interpolating between the colors using the values from the `value_buffer`. Supports wireframe.
 
-Creates a gradient shader using the WebGL context *gl*.
+<a name="adcirc-gradient-shader" href="#adcirc-gradient-shader">#</a> *adcirc*.**gradient_shader**(*gl*, *num_colors*[, *min*, *max*])
+
+Creates a gradient shader with *num_colors* colors using the WebGL context *gl*. Gradient shaders must have at least two colors. By default, color stops are evenly spaced between 0 and 1 with colors from [d3.**schemeCategory20**](https://github.com/d3/d3-scale#schemeCategory20). To interpolate between stops other than 0 and 1, optionally pass in *min* and *max*.
+
+<a name="gradient-shader-gradient-colors" href="#gradient-shader-gradient-colors">#</a> *gradient_shader*.**gradient_colors**([*colors*])
+
+Gets or sets the gradient colors. The *colors* list must contain [d3.**rgb**()](https://github.com/d3/d3-color#rgb) colors, or objects that have `r`, `g`, and `b` properties. The *colors* list must have the correct number of colors, as defined when creating the gradient shader instance.
+
+<a name="gradient-shader-gradient-stops" href="#gradient-shader-gradient-stops">#</a> *gradient_shader*.**gradient_stops**([*stops*])
+
+Gets or sets the gradient stops. The *stops* list must contain the correct number of stops, as defined when creating the gradient shader instance.
 
 ### View
 

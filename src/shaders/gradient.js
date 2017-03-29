@@ -2,6 +2,8 @@ import { gl_program } from '../gl_program'
 
 function gradient_shader ( gl, num_colors, min, max ) {
 
+    num_colors = num_colors > 1 ? num_colors : 2;
+
     var _gl = gl;
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
     var _gradient_colors = [];
