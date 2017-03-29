@@ -4,7 +4,7 @@ A WebGL renderer and supporting tools for the visualization of ADCIRC data.
 
 ## API Reference
 
-The adcirc-render library consists of three main types. First, a renderer which knows how to communicate with the browser in order to draw things on the screen. Second, geometries, which describe *what* to draw. And third, shaders, which describe *how* to draw.
+The adcirc-render library consists of three main types. First, a [renderer](#renderer) which knows how to communicate with the browser in order to draw things on the screen. Second, [geometries](#geometry), which describe *what* to draw. And third, [shaders](#shaders), which describe *how* to draw.
 
 ### Renderer
 
