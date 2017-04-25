@@ -60,6 +60,7 @@ function gradient_shader ( gl, num_colors, min, max ) {
 
     _program.gradient_stops = function ( _ ) {
         if ( !arguments.length ) return _gradient_stops;
+        if ( _.length == 2 && num_colors !== 2 ) _ = interpolate_stops( _[0], _[1], num_colors );
         _gradient_stops = _;
         _gl.useProgram( _program );
         _gl.uniform1fv( _program.uniform( 'gradient_stops' ), _gradient_stops );
@@ -118,6 +119,18 @@ function gradient_shader ( gl, num_colors, min, max ) {
         .wire_color( _program.wire_color() )
         .wire_width( _program.wire_width() );
 
+    function interpolate_stops ( min, max, num_stops ) {
+
+        var stops = [];
+
+        for ( var i=0; i<num_stops; ++i ) {
+            stops.push( min + ( max-min ) * i/(num_stops-1) );
+        }
+
+        return stops;
+
+    }
+
 }
 
 function gradient_vertex ( num_colors ) {
@@ -169,7 +182,7 @@ function gradient_fragment () {
         '   if ( wire_width == 0.0 ) {',
         '       gl_FragColor = vec4(_vertex_color, 1.0);',
         '   } else {',
-        '      gl_FragColor = mix( wire, vec4(_vertex_color, 1.0), edgeFactorTri() );',
+        '       gl_FragColor = mix( wire, vec4(_vertex_color, 1.0), edgeFactorTri() );',
         '   }',
         '}'
     ].join('\n');

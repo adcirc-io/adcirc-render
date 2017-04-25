@@ -7,6 +7,7 @@ function geometry ( gl, mesh ) {
 
     var _num_triangles = 0;
     var _num_vertices = 0;
+    var _multiplier = 1.0;
 
     var _buffers = d3.map();
     var _geometry = dispatcher();
@@ -26,7 +27,12 @@ function geometry ( gl, mesh ) {
 
     _geometry.bounding_box = function () {
 
-        return _mesh.bounding_box();
+        var bbox = _mesh.bounding_box();
+        var minx = bbox[0][0];
+        var miny = bbox[0][1];
+        var maxx = bbox[1][0];
+        var maxy = bbox[1][1];
+        return [ [_multiplier*minx, _multiplier*miny], [_multiplier*maxx, _multiplier*maxy] ];
 
     };
 
@@ -78,6 +84,13 @@ function geometry ( gl, mesh ) {
 
     function initialize ( nodes, elements ) {
 
+        var bbox = mesh.bounding_box();
+        var min_dim = Math.min( bbox[1][0] - bbox[0][0], bbox[1][1] - bbox[0][1] );
+        // while ( min_dim < Math.pow( 1, 32 ) ) {
+        //     _multiplier *= 2;
+        //     min_dim *= _multiplier;
+        // }
+
         _num_vertices = elements.array.length;
         _num_triangles = elements.array.length / 3;
 
@@ -91,8 +104,8 @@ function geometry ( gl, mesh ) {
             var node_number = elements.array[ i ];
             var node_index = nodes.map.get( node_number );
 
-            vertex_position[ 2 * i ] = nodes.array[ dimensions * node_index ];
-            vertex_position[ 2 * i + 1 ] = nodes.array[ dimensions * node_index + 1 ];
+            vertex_position[ 2 * i ] = nodes.array[ dimensions * node_index ] * _multiplier;
+            vertex_position[ 2 * i + 1 ] = nodes.array[ dimensions * node_index + 1 ] * _multiplier;
 
         }
 

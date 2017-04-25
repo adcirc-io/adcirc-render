@@ -265,7 +265,8 @@ function dispatcher ( object ) {
 
         if ( listenerArray !== undefined ) {
 
-            event.target = object;
+            if ( event.target === undefined )
+                event.target = object;
 
             length = listenerArray.length;
 
@@ -285,7 +286,8 @@ function dispatcher ( object ) {
 
         if ( oneoffArray !== undefined ) {
 
-            event.target = object;
+            if ( event.target === undefined )
+                event.target = object;
 
             length = oneoffArray.length;
 
@@ -385,6 +387,15 @@ function gl_renderer ( selection ) {
     _renderer.render = function () {
 
         _needs_render = true;
+        return _renderer;
+
+    };
+
+    _renderer.set_view = function ( view ) {
+
+        view.on( 'update', _renderer.render );
+        _views = [ view ];
+        update_projection();
         return _renderer;
 
     };
@@ -515,6 +526,7 @@ function geometry ( gl, mesh ) {
 
     var _num_triangles = 0;
     var _num_vertices = 0;
+    var _multiplier = 1.0;
 
     var _buffers = d3.map();
     var _geometry = dispatcher();
@@ -534,7 +546,12 @@ function geometry ( gl, mesh ) {
 
     _geometry.bounding_box = function () {
 
-        return _mesh.bounding_box();
+        var bbox = _mesh.bounding_box();
+        var minx = bbox[0][0];
+        var miny = bbox[0][1];
+        var maxx = bbox[1][0];
+        var maxy = bbox[1][1];
+        return [ [_multiplier*minx, _multiplier*miny], [_multiplier*maxx, _multiplier*maxy] ];
 
     };
 
@@ -586,6 +603,13 @@ function geometry ( gl, mesh ) {
 
     function initialize ( nodes, elements ) {
 
+        var bbox = mesh.bounding_box();
+        var min_dim = Math.min( bbox[1][0] - bbox[0][0], bbox[1][1] - bbox[0][1] );
+        // while ( min_dim < Math.pow( 1, 32 ) ) {
+        //     _multiplier *= 2;
+        //     min_dim *= _multiplier;
+        // }
+
         _num_vertices = elements.array.length;
         _num_triangles = elements.array.length / 3;
 
@@ -599,8 +623,8 @@ function geometry ( gl, mesh ) {
             var node_number = elements.array[ i ];
             var node_index = nodes.map.get( node_number );
 
-            vertex_position[ 2 * i ] = nodes.array[ dimensions * node_index ];
-            vertex_position[ 2 * i + 1 ] = nodes.array[ dimensions * node_index + 1 ];
+            vertex_position[ 2 * i ] = nodes.array[ dimensions * node_index ] * _multiplier;
+            vertex_position[ 2 * i + 1 ] = nodes.array[ dimensions * node_index + 1 ] * _multiplier;
 
         }
 
@@ -974,6 +998,8 @@ function basic_fragment () {
 
 function gradient_shader ( gl, num_colors, min, max ) {
 
+    num_colors = num_colors > 1 ? num_colors : 2;
+
     var _gl = gl;
     var _program = gl_program( _gl, gradient_vertex( num_colors ), gradient_fragment() );
     var _gradient_colors = [];
@@ -1030,6 +1056,7 @@ function gradient_shader ( gl, num_colors, min, max ) {
 
     _program.gradient_stops = function ( _ ) {
         if ( !arguments.length ) return _gradient_stops;
+        if ( _.length == 2 && num_colors !== 2 ) _ = interpolate_stops( _[0], _[1], num_colors );
         _gradient_stops = _;
         _gl.useProgram( _program );
         _gl.uniform1fv( _program.uniform( 'gradient_stops' ), _gradient_stops );
@@ -1088,6 +1115,18 @@ function gradient_shader ( gl, num_colors, min, max ) {
         .wire_color( _program.wire_color() )
         .wire_width( _program.wire_width() );
 
+    function interpolate_stops ( min, max, num_stops ) {
+
+        var stops = [];
+
+        for ( var i=0; i<num_stops; ++i ) {
+            stops.push( min + ( max-min ) * i/(num_stops-1) );
+        }
+
+        return stops;
+
+    }
+
 }
 
 function gradient_vertex ( num_colors ) {
@@ -1139,7 +1178,7 @@ function gradient_fragment () {
         '   if ( wire_width == 0.0 ) {',
         '       gl_FragColor = vec4(_vertex_color, 1.0);',
         '   } else {',
-        '      gl_FragColor = mix( wire, vec4(_vertex_color, 1.0), edgeFactorTri() );',
+        '       gl_FragColor = mix( wire, vec4(_vertex_color, 1.0), edgeFactorTri() );',
         '   }',
         '}'
     ].join('\n');

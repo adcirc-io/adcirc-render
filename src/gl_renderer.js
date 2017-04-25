@@ -78,6 +78,15 @@ function gl_renderer ( selection ) {
 
     };
 
+    _renderer.set_view = function ( view ) {
+
+        view.on( 'update', _renderer.render );
+        _views = [ view ];
+        update_projection();
+        return _renderer;
+
+    };
+
     _renderer.zoom_to = function ( _ ) {
 
         if ( !arguments.length ) return _renderer;
