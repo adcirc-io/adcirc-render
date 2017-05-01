@@ -27,8 +27,12 @@ function gl_renderer ( selection ) {
     var _clear_color = d3.color( 'white' );
 
     var _projection_matrix = m4();
-    var _zoom = d3.zoom().on( 'zoom', zoomed );
-    _selection.call( _zoom );
+    var _zoom = d3.zoom()
+        .on( 'zoom', zoomed );
+    _selection
+        .call( _zoom )
+        .on( 'mousemove', on_hover )
+        .on( 'click', on_click );
 
     var _needs_render = true;
     var _views = [];
@@ -117,20 +121,13 @@ function gl_renderer ( selection ) {
 
     };
 
-    _canvas.addEventListener( 'webglcontextlost', bubble_event );
-    _canvas.addEventListener( 'webglcontextrestored', bubble_event );
-    _canvas.addEventListener( 'webglcontextcreationerror', bubble_event );
+    _canvas.addEventListener( 'webglcontextlost', _renderer.dispatch );
+    _canvas.addEventListener( 'webglcontextrestored', _renderer.dispatch );
+    _canvas.addEventListener( 'webglcontextcreationerror', _renderer.dispatch );
 
     check_render();
 
     return _renderer;
-
-
-    function bubble_event ( event ) {
-
-        _renderer.dispatch( event );
-
-    }
 
     function check_render () {
 
@@ -144,6 +141,37 @@ function gl_renderer ( selection ) {
         requestAnimationFrame( check_render );
 
     }
+
+    function on_click () {
+
+        var mouse = d3.mouse( this );
+        var transform = d3.zoomTransform( _canvas );
+        var pos = transform.invert( mouse );
+        pos[1] = _offset_y - pos[1];
+
+        _renderer.dispatch({
+            type: 'click',
+            coordinates: pos,
+            mouse: mouse,
+            transform: transform,
+            offset_y: _offset_y
+        });
+
+    }
+
+    function on_hover () {
+
+        var mouse = d3.mouse( this );
+        var pos = d3.zoomTransform( _canvas ).invert( [mouse[0], mouse[1] ] );
+        pos[1] = _offset_y - pos[1];
+
+        _renderer.dispatch({
+            type: 'hover',
+            coordinates: pos
+        });
+
+    }
+
 
     function render () {
 
@@ -193,6 +221,11 @@ function gl_renderer ( selection ) {
         for ( var i=0; i<_views.length; ++i ) {
             _views[i].shader().projection( _projection_matrix );
         }
+
+        _renderer.dispatch({
+            type: 'projection',
+            transform: d3.zoomTransform( _canvas )
+        });
 
     }
 

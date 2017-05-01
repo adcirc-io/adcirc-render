@@ -10,7 +10,7 @@ var num_cols = 10;
 
 var node_count = 0;
 var element_count = 0;
-var mul = 0.001;
+var mul = 1;
 
 for ( var row=0; row<num_rows; ++row ) {
     for ( var col=0; col<num_cols; ++col ) {
@@ -55,7 +55,7 @@ var view = adcirc
     .view( renderer.gl_context(), geometry, shader );
 
 renderer.add_view( view )
-    .zoom_to( geometry, 2000 );
+    .zoom_to( geometry, 200 );
 
 d3.interval( random_heights, 250 );
 
