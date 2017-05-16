@@ -14,11 +14,14 @@
   },
   "scripts": {
     "dev": "rollup -w --banner \"$(preamble)\" -f umd -n adcirc -o build/adcirc-render.js -- index.js",
-    "prepublish": "rm -rf build && mkdir build && rollup --banner \"$(preamble)\" -f umd -n adcirc -o build/adcirc-render.js -- index.js"
+    "prepublish": "rm -rf build && mkdir build && rollup --banner \"$(preamble)\" -f umd -n adcirc -o build/adcirc-render.js -- index.js",
+    "prepare": "uglifyjs --preamble \"$(preamble)\" build/adcirc-render.js -c -m -o build/adcirc-render.min.js",
+    "postpublish": "zip -j build/adcirc-render.zip -- LICENSE README.md build/adcirc-render.js build/adcirc-render.min.js"
   },
   "devDependencies": {
     "package-preamble": "0.0.2",
     "rollup": "^0.41.4",
-    "rollup-watch": "^3.2.2"
+    "rollup-watch": "^3.2.2",
+    "uglify-js": "^3.0.6"
   }
 }
