@@ -12,16 +12,34 @@
     "type": "git",
     "url": "https://github.com/atdyer/adcirc-render.git"
   },
+  "eslintConfig": {
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "env": {
+      "browser": true
+    },
+    "extends": "eslint:recommended"
+  },
   "scripts": {
-    "dev": "rollup -w --banner \"$(preamble)\" -f umd -n adcirc -o build/adcirc-render.js -- index.js",
-    "prepublish": "rm -rf build && mkdir build && rollup --banner \"$(preamble)\" -f umd -n adcirc -o build/adcirc-render.js -- index.js",
-    "prepare": "uglifyjs --preamble \"$(preamble)\" build/adcirc-render.js -c -m -o build/adcirc-render.min.js",
-    "postpublish": "zip -j build/adcirc-render.zip -- LICENSE README.md build/adcirc-render.js build/adcirc-render.min.js"
+    "dev": "rollup -c -w",
+    "build": "rollup -c",
+    "uglify": "uglifyjs --preamble \"$(preamble)\" build/adcirc-render.js -c -m -o build/adcirc-render.min.js",
+    "pretest": "rm -rf build && mkdir build && npm run build",
+    "test": "tape 'test/**/*-test.js'",
+    "prepublish": "npm run test && npm run uglify",
+    "postpublish": "git push && git push --tags && zip -j build/adcirc-render.zip -- LICENSE README.md build/adcirc-render.js build/adcirc-render.min.js"
   },
   "devDependencies": {
+    "eslint": "^3.19.0",
     "package-preamble": "0.0.2",
     "rollup": "^0.41.4",
+    "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-watch": "^3.2.2",
-    "uglify-js": "^3.0.6"
+    "tape": "^4.6.3",
+    "uglify-js": "^2.8.11"
+  },
+  "dependencies": {
+    "adcirc-events": "^1.0.10"
   }
 }

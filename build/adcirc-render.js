@@ -1,4 +1,5 @@
 // https://github.com/atdyer/adcirc-render Version 0.0.1. Copyright 2017 Tristan Dyer.
+
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -183,7 +184,7 @@ function dispatcher ( object ) {
     object.on = function ( type, listener ) {
 
         if ( !arguments.length ) return object;
-        if ( arguments.length == 1 ) return _listeners[ type ];
+        if ( arguments.length === 1 ) return _listeners[ type ];
 
         if ( _listeners[ type ] === undefined ) {
 
@@ -204,7 +205,7 @@ function dispatcher ( object ) {
     object.once = function ( type, listener ) {
 
         if ( !arguments.length ) return object;
-        if ( arguments.length == 1 ) return _oneoffs[ type ];
+        if ( arguments.length === 1 ) return _oneoffs[ type ];
 
         if ( _oneoffs[ type ] === undefined ) {
 

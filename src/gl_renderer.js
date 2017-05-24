@@ -1,6 +1,6 @@
 import { gl_extensions, web_gl_available } from './gl_extensions'
 import { m4 } from './mat4'
-import { dispatcher } from '../../adcirc-events/index'
+import { dispatcher } from 'adcirc-events'
 
 function gl_renderer ( selection ) {
 
