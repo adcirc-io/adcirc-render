@@ -1,4 +1,4 @@
-// https://github.com/atdyer/adcirc-render Version 0.0.2. Copyright 2017 Tristan Dyer.
+// https://github.com/adcirc-io/adcirc-render Version 0.0.3. Copyright 2017 Tristan Dyer.
 
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
